@@ -1570,43 +1570,25 @@ ggplot(AB, aes(x = zone, y = bp_rp, fill = zone)) +
 
       </details>
       <details>
-        <summary><strong>Rao–Blackwell</strong></summary>
+        <summary><strong>Comparación de estimadores de la media</strong></summary>
         
-  <h2>Rao–Blackwell: demostración empírica mediante simulación</h2>
+  <h2>Comparación de estimadores de la media mediante simulación</h2>
 
   <h3>1. Objetivo de la sección</h3>
   <p>
-    El propósito de esta sección es ilustrar de forma empírica el Teorema de Rao–Blackwell aplicado a la estimación
-    de la media del índice de color <code>bp_rp</code> en la Zona A de la muestra (plano galáctico). Se compara:
+    El propósito de esta sección es comparar empíricamente dos estimadores de la media del índice de color bp_rp en la Zona A (plano galáctico):
   </p>
   <ul>
     <li>Un <strong>estimador ingenuo</strong>, basado en un único dato aleatorio de la muestra (X<sub>1</sub>).</li>
-    <li>Un <strong>estimador mejorado por Rao–Blackwell</strong>, que en este contexto coincide con la <strong>media muestral</strong>.</li>
+    <li>Un <strong>Un estimador estándar, dado por la media muestral de 
+n observaciones independientes.</strong>.</li>
   </ul>
-  <p>
-    La simulación permite cuantificar y visualizar cómo la Rao–Blackwellización mantiene el sesgo nulo pero reduce
-    de manera notable la varianza del estimador.
-  </p>
+ 
 
-  <h3>2. Marco teórico: Teorema de Rao–Blackwell</h3>
-  <p>
-    El Teorema de Rao–Blackwell proporciona un procedimiento general para mejorar un estimador insesgado. Sea:
-  </p>
-  <ul>
-    <li>&theta; un parámetro de interés (en nuestro caso, la media &mu; de <code>bp_rp</code>).</li>
-    <li>&#770;&theta; un estimador insesgado inicial (estimador &ldquo;ingenuo&rdquo;).</li>
-    <li>T un <strong>estadístico suficiente</strong> para &theta;.</li>
-  </ul>
-  <p>
-    El teorema establece que el estimador
-    <span style="white-space: nowrap;">&#771;&theta; = E(&#770;&theta; &mid; T)</span>
-    es también insesgado y tiene varianza <strong>menor o igual</strong> que la de &#770;&theta;.
-    A este proceso se le denomina <strong>Rao–Blackwellización</strong>.
-  </p>
 
   <h3>3. Diseño de la simulación</h3>
   <p>
-    Para mostrar el efecto de Rao–Blackwell sobre un estimador ingenuo, se construyó un experimento de simulación a
+    Para mostrar el efecto sobre un estimador ingenuo, se construyó un experimento de simulación a
     partir de los datos ya preparados y validados de las Zonas A y B (objeto <code>AB</code>).
   </p>
   <ul>
@@ -1629,7 +1611,7 @@ ggplot(AB, aes(x = zone, y = bp_rp, fill = zone)) +
   </p>
   <ul>
     <li><strong>Estimador ingenuo</strong> (X<sub>1</sub>): el primer valor de la muestra aleatoria.</li>
-    <li><strong>Estimador Rao–Blackwell</strong>: la <strong>media muestral</strong> de los n datos seleccionados.</li>
+    <li><strong>Estimador mejor</strong>: la <strong>media muestral</strong> de los n datos seleccionados.</li>
   </ul>
 
 
@@ -1649,9 +1631,9 @@ ggplot(AB, aes(x = zone, y = bp_rp, fill = zone)) +
   <!-- Reemplaza "ruta/a/figura_rao_blackwell.png" por la ruta real de tu imagen -->
   <figure>
     <img src="./gaia_assets/image3.png"
-         alt="Distribución de los estimadores ingenuo y Rao–Blackwell para distintos tamaños muestrales.">
+         alt="Distribución de los estimadores ingenuo y el normal para distintos tamaños muestrales.">
     <figcaption>
-      Figura. Comparación de la distribución del estimador ingenuo (X<sub>1</sub>) y del estimador Rao–Blackwell
+      Figura. Comparación de la distribución del estimador ingenuo (X<sub>1</sub>) y del estimador normal
       (media muestral) para n = 10, 50 y 200. La línea punteada indica la media empírica &#x3BC;&#770;.
     </figcaption>
   </figure>
@@ -1666,7 +1648,7 @@ ggplot(AB, aes(x = zone, y = bp_rp, fill = zone)) +
       </ul>
     </li>
     <li>
-      <strong>Estimador Rao–Blackwell (media muestral):</strong>
+      <strong>Estimador normal (media muestral):</strong>
       <ul>
         <li>También es insesgado.</li>
         <li>Su varianza disminuye rápidamente al aumentar n</strong>.</li>
@@ -1676,13 +1658,13 @@ ggplot(AB, aes(x = zone, y = bp_rp, fill = zone)) +
   </ul>
   <p>
     En conjunto, la diferencia entre ambos estimadores se vuelve <em>visualmente evidente</em>: el estimador basado en un
-    solo dato se dispersa enormemente, mientras que la versión Rao–Blackwellizada se concentra de forma notable alrededor
+    solo dato se dispersa enormemente, mientras que la versión normal se concentra de forma notable alrededor
     de la media de referencia.
   </p>
 
   <h3>6. Conclusión</h3>
   <p>
-    Se muestra de forma clara el efecto del Teorema de Rao–Blackwell:
+    Se muestra de forma clara el efecto del tamaño de la muestra sobre el la dispersión.
   </p>
   <ul>
     <li>Ambos estimadores de &mu; son <strong>insesgados</strong>, por lo que, en promedio, aciertan.</li>
@@ -1691,11 +1673,6 @@ ggplot(AB, aes(x = zone, y = bp_rp, fill = zone)) +
     <li>Esta mejora se refleja tanto en la tabla de resultados (varianzas y eficiencia relativa) como en los gráficos
       de violín y caja.</li>
   </ul>
-  <p>
-    De este modo, la sección evidencia empíricamente que, cuando existe un estadístico suficiente adecuado (en este caso,
-    la media muestral bajo supuesta normalidad), la Rao–Blackwellización es efectiva para obtener
-    estimadores más precisos sin sacrificar insesgadez.
-  </p>
 
 
       </details>
