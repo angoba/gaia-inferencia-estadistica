@@ -1260,7 +1260,7 @@ ggplot(AB, aes(x = zone, y = bp_rp, fill = zone)) +
   <ul>
     <li>Se selecciona una variable (por ejemplo, <code>bp_rp</code>) y una zona (por ejemplo, Zona A).</li>
     <li>Se calcula la media empírica <span>\(\hat\mu\)</span> y la desviación estándar <span>\(\hat\sigma\)</span> de la zona.</li>
-    <li>Para cada tamaño muestral <span>\(n\)</span> en una grilla (por ejemplo, <span>\(n = 20, 50, 100, 200, 500, 1000\)</span>) se generan múltiples muestras bootstrap con reemplazo.</li>
+    <li>Para cada tamaño muestral <span>\(n\)</span> en una grilla (por ejemplo, <span>\(n = 20, 50, 100, 200, 500, 1000\)</span>) se generan múltiples muestras.</li>
     <li>Se calcula la media muestral <span>\(\bar X_n\)</span> en cada réplica y se almacena para estudiar su distribución.</li>
     <li>Se calcula el error cuadrático medio empírico <span>\(\text{RMSE}(n)\)</span> respecto a <span>\(\hat\mu\)</span> y se compara con la tasa teórica <span>\(\hat\sigma / \sqrt{n}\)</span>.</li>
   </ul>
