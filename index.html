@@ -1,0 +1,2927 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Proyecto de Inferencia Estadística — Gaia DR3 (Zonas A y B)</title>
+  <style>
+
+body{
+  position: relative;              /* crea un contexto para el ::before */
+  background: transparent;         /* dejamos el color al html si lo usas */
+}
+
+/* estados base */
+.panel{ opacity:0; transform: translateY(6px); transition: opacity .28s ease, transform .28s ease; }
+.panel[aria-hidden="false"]{ opacity:1; transform: translateY(0); }
+
+body::before{
+  content: "";
+  position: fixed;                  /* cubre toda la ventana */
+  inset: 0;
+  z-index: 0;                       /* por debajo de los paneles (que pondremos en z:1) */
+  background:
+    linear-gradient(180deg, rgba(7,10,22,.65), rgba(7,10,22,.65)),
+    url("./gaia_assets/universo.jpeg") center/cover no-repeat;
+  /* Opcional: */
+  /* background-attachment: fixed;  // desactívalo si iOS hace “jank” */
+  filter: brightness(.95);          /* ajusta legibilidad general */
+}
+
+/* 2) Asegura que el contenido quede por encima del fondo */
+.hero, .tabs, .panel, .footer, .container{
+  position: relative;
+  z-index: 1;
+}
+
+    :root{
+      --bg:#0b1020; --panel:#121832; --muted:#1b2345; --text:#e7ecff; --sub:#b9c3ff; --accent:#6aa8ff; --accent-2:#8ee6d2;
+      --ok:#36c27a; --warn:#ffbd59; --danger:#ff6b6b; --shadow:0 8px 24px rgba(0,0,0,.25)
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    h1,h2,h3{line-height:1.25;margin:0 0 .6rem}
+    h1{font-size:clamp(1.6rem,2.4vw,2.2rem)}
+    h2{font-size:clamp(1.2rem,2vw,1.6rem);color:var(--accent)}
+    h3{font-size:1.05rem;color:var(--accent-2)}
+    p{margin:.5rem 0 1rem}
+    a{color:var(--accent)}
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+
+    
+
+    /* Hero */
+    .hero{background: radial-gradient(1200px 500px at 10% -20%, #203066 0%, transparent 60%),
+           radial-gradient(900px 800px at 120% -50%, #2b7be6 0%, transparent 55%),
+           linear-gradient(180deg, #0c1430, #0b1020),
+           url("./gaia_assets/universo.webp");
+           background-size: auto, auto, cover, cover;
+  background-position: center, center, center, center;
+  background-repeat: no-repeat;
+  background-blend-mode: overlay;
+          border-radius:22px;padding:26px 24px 22px;box-shadow:var(--shadow)}
+    .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+    .hero-card{background:rgba(0,0,0,.25);border:1px solid #243065;border-radius:16px;padding:14px}
+    .badge{display:inline-flex;gap:.5rem;align-items:center;background:#0d1b3f;border:1px solid #263a70;border-radius:999px;padding:.25rem .6rem;color:#cfe2ff;font-size:.85rem}
+
+    /* Tabs */
+    .tabs{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+    .tab-btn{appearance:none;border:1px solid #2a376e;background:#121a3a;color:var(--text);padding:.55rem .8rem;border-radius:10px;cursor:pointer}
+    .tab-btn[aria-selected="true"]{background:linear-gradient(180deg,#2a3c84,#16235a);border-color:#3e5ccd;box-shadow:inset 0 0 0 1px #6aa8ff66}
+
+    .panel{display:none;margin-top:14px;background:var(--panel);border:1px solid #26315e;border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+    .panel[aria-hidden="false"]{display:block}
+
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .code{background:#0b122a;border:1px solid #243065;border-radius:12px;padding:12px;overflow:auto}
+    pre{margin:0;white-space:pre;overflow:auto}
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:.92rem}
+
+    .callout{border-left:4px solid var(--accent);background:#0d1534;padding:.8rem 1rem;border-radius:8px}
+    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+    .kpi .card{background:#0f1736;border:1px solid #233066;border-radius:14px;padding:.8rem}
+    .tag{display:inline-block;padding:.15rem .45rem;border:1px solid #2d3b77;border-radius:999px;font-size:.78rem;color:#d6dfff}
+
+    details{background:#0d1430;border:1px solid #22306a;border-radius:12px;padding:.6rem .8rem}
+    summary{cursor:pointer;color:#cfe2ff}
+
+    .footer{opacity:.7;margin:24px 0 8px}
+
+    @media (max-width:900px){
+      .hero-grid{grid-template-columns:1fr}
+      .two-col{grid-template-columns:1fr}
+    }
+
+    /* Print */
+    @media print{
+      body{background:#fff;color:#000}
+      .hero,.panel{box-shadow:none;border-color:#ccc}
+      .tabs{display:none}
+      .panel{display:block !important;page-break-inside:avoid}
+      a{color:#000}
+    }
+  </style>
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+</head>
+<body>
+  <div class="container">
+    <section class="hero" id="portada" role="banner" aria-labelledby="t_portada">
+      <div class="badge">Proyecto académico • Inferencia Estadística</div>
+      <div class="sub" style="margin-top:8px">Nombre: <strong>Juan Diego Barrero, Sara Fandiño, Hayni Anaya</strong> • Universidad: <strong>Universidad Santo Tomás</strong></div>
+      <h1 id="t_portada">Inferencia Estadística</h1>
+      <p class="sub">Este proyecto realizado para la clase de <em>Inferencia Estadística</em> con el profesor <em>Ivan Ladino</em> busca ilustrar los conceptos vistos durante el semestre por medio de la construcción de dos bases (A/B) a partir de consultas SQL/ADQL al archivo de Gaia DR3. Un repositorio masivo disponible en internet para uso libre que 
+        tiene como misión hacer el mapa 3D más preciso de la Via Láctea. Con más de mil millones de objetos astronómicos observados en su base de datos. Para este proyecto buscamos ejemplificar los conceptos de <b>Teorema del Límite Central, consistencia, suficiencia, Intervalos de Confianza, Rao–Blackwell, pruebas de hipótesis, Errores Tipo I, Tipo II y Potencia.</b></p>
+      <div class="hero-grid">
+        <div class="hero-card">
+          <h3>Resumen rápido</h3>
+          <ul>
+            <li><strong>Fuente de datos:</strong> Gaia DR3 (ESA). Selección con astroquery/ADQL.</li>
+            <li><strong>Zona A:</strong> |b| ≤ 5° (plano). <strong>Zona B:</strong> b ≥ 80° (polo N).</li>
+            <li><strong>Variables clave:</strong> phot_g_mean_mag (G), bp_rp (color), parallax, parallax_error.</li>
+            <li><strong>Objetivo:</strong> contrastar brillo y color entre regiones; ilustrar conceptos de inferencia.</li>
+          </ul>
+          <div class="kpi">
+            <div class="card"><div class="tag">Tamaño A</div><div><strong>≈ 80k</strong> filas</div></div>
+            <div class="card"><div class="tag">Tamaño B</div><div><strong>≈ 80k</strong> filas</div></div>
+            <div class="card"><div class="tag">Variables de interés</div><div><strong>Brillo, Color, parallax_over_error</strong></div></div>
+          </div>
+        </div>
+        <div class="hero-card">
+          <h3></h3>
+            <figure>
+              <img alt="Plano vs Polo — Imagen 2" src="./gaia_assets/image44.png" style="width:100%;border-radius:10px;border:1px solid #243065"/>
+              <figcaption class="sub">Figura A — Esquema plano galáctico vs. polo</figcaption>
+            </figure>
+            <figure>
+              <img alt="Plano vs Polo — Imagen 2" src="./gaia_assets/image30.png" style="width:100%;border-radius:10px;border:1px solid #243065"/>
+              <figcaption class="sub">Figura B — Ubicación relativa del Sistema Solar en la Vía Láctea.</figcaption>
+            </figure>
+  
+    
+        </div>
+      </div>
+    </section>
+
+    <!-- Navegación por pestañas -->
+    <nav class="tabs" role="tablist" aria-label="Secciones del informe">
+      <button class="tab-btn" role="tab" aria-selected="true" aria-controls="panel_intro" id="tab_intro">Introducción</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_pasos" id="tab_pasos">Descarga & SQL</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_metod" id="tab_metod">Metodología</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_contexto" id="tab_contexto">Contexto físico</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_caia" id="tab_caia">Gaia DR3 & columnas</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_prep" id="tab_prep">Preparación & unión</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_checks" id="tab_checks">Comprobaciones</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_eda" id="tab_eda">EDA</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_inferencia" id="tab_inferencia">Inferencia</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_pruebas" id="tab_pruebas">Pruebas de hipótesis</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_R" id="tab_R">Código R</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel_refs" id="tab_refs">Referencias</button>
+    </nav>
+
+    <!-- Panels -->
+    <section class="panel" id="panel_intro" role="tabpanel" aria-labelledby="tab_intro" aria-hidden="false">
+  <h2>Introducción</h2>
+
+  <h3>Propósito</h3>
+  <p>
+    ¿Qué pasa con las estrellas que se observan pegadas al disco de la galaxia y las que se encuentran fuera del plano? El proyecto intenta responder esa pregunta usando datos reales de
+    <strong>Gaia DR3</strong>. Para ello se construyen dos bases de datos paralelas:
+    la <strong>Zona A</strong> (cercana al plano galáctico) y la <strong>Zona B</strong> (cercana al polo galáctico norte).
+    A partir de estas dos zonas, aplicamos herramientas de <em>inferencia estadística</em> para comparar brillo,
+    color y calidad de las mediciones de distancia, y ver hasta qué punto las diferencias que observamos son simplemente
+    ruido o reflejan efectos físicos reales en la Vía Láctea. Con los datos de la "población" zonal, procedemos a realizar
+    pruebas de hipótesis para aplicar lo visto en clase e inferir realidades sobre la población en base a muestreos aleatorios.
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image114.png"
+         alt="Anatomía de la nuestra galaxia."
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura P1 — Anatomía de nuestra galaxia.
+    </figcaption>
+  </figure>
+
+  <h3>Enfoque</h3>
+  <p>
+    La idea es que, sección por sección, se pueda seguir la historia completa del desarrollo del trabajo:
+  </p>
+  <ul>
+    <li>Cómo se obtienen los datos de Gaia y cómo se definen las Zonas A y B.</li>
+    <li>Qué decisiones de limpieza y preparación se tomaron y por qué son importantes.</li>
+    <li>Qué nos cuentan los gráficos exploratorios antes de hacer cualquier prueba formal.</li>
+    <li>Cómo entran en juego el Teorema del Límite Central, los intervalos de confianza y las pruebas de hipótesis al comparar las dos zonas.</li>
+  </ul>
+  <p>
+    El objetivo es usar la estadística como una <strong>herramienta práctica</strong> para entender mejor la galaxia
+    en la que vivimos.
+  </p>
+
+  <h3>Variables del estudio</h3>
+  <ul>
+    <li>
+      <strong>Brillo (G, <code>phot_g_mean_mag</code>)</strong>:
+      mide cuán brillante se ve una estrella en la banda G de Gaia.
+      La escala es “al revés”: números más bajos significan estrellas más brillantes.
+    </li>
+    <li>
+      <strong>Color (BP−RP, <code>bp_rp</code>)</strong>:
+      diferencia entre una magnitud en azul (BP) y otra en rojo (RP).
+      Nos ayuda a distinguir estrellas más “azules” (calientes) de estrellas más “rojas” (frías o enrojecidas por polvo interestelar).
+    </li>
+    <li>
+      <strong>Calidad de la distancia (<code>parallax_over_error</code>)</strong>:
+      relación entre la paralaje y su error; valores altos indican mediciones de distancia más confiables.
+    </li>
+  </ul>
+
+  <h3>Motivación y aplicación estadística</h3>
+  <p>
+    Comparar el plano galáctico con el polo norte galáctico permite observar, de forma directa, los efectos del polvo
+    interestelar y de la estructura de la Vía Láctea: en el plano hay más estrellas, gas y polvo; hacia el polo el
+    escenario es mucho más limpio. Sobre esta base física, el proyecto se convierte en un “laboratorio natural” para:
+  </p>
+  <ul>
+    <li>construir intervalos de confianza,</li>
+    <li>contrastar hipótesis sobre diferencias de medias y varianzas,</li>
+    <li>y explorar la idea de errores Tipo I y Tipo II.</li>
+  </ul>
+
+  <h3>Organización del documento</h3>
+  <p>
+    En las pestañas superiores se encuentran:
+  </p>
+  <ul>
+    <li>los pasos de descarga y consultas a Gaia,</li>
+    <li>la metodología general,</li>
+    <li>el contexto físico de la Vía Láctea y de Gaia,</li>
+    <li>la descripción de las columnas utilizadas,</li>
+    <li>las comprobaciones de calidad y la preparación de las bases,</li>
+    <li>el análisis exploratorio,</li>
+    <li>y la parte de inferencia estadística con sus pruebas de hipótesis.</li>
+  </ul>
+
+</section>
+
+
+    <section class="panel" id="panel_pasos" role="tabpanel" aria-labelledby="tab_pasos" aria-hidden="true">
+
+      <figure>
+    <img src="./gaia_assets/image105.png"
+         alt="Página Web de donde se jalaron los datos"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura P1 — Imagen de la pagina de donde se obtuvieron los datos usados para nuestro informe.
+    </figcaption>
+  </figure>
+
+      <h2>Descarga de datos y consultas (astroquery/ADQL)</h2>
+
+      <h3>Pasos</h3>
+      <ol>
+        <li><strong>Se instalaron las dependencias</strong> en el entorno de trabajo de Python.
+          <div class="code"><pre><code>pip install astroquery astropy</code></pre></div>
+        </li>
+        <li><strong>Ahora se importa y configura</strong> el acceso a Gaia TAP+ desde Python.
+          <div class="code"><pre><code>from astroquery.gaia import Gaia
+Gaia.MAIN_GAIA_TABLE = "gaiadr3.gaia_source"  # Base DR3</code></pre></div>
+        </li>
+        <li><strong>Se definen las zonas a trabajar</strong>:
+          <ul>
+            <li><em>por latitud galáctica</em>: <code>|b| ≤ 5°</code> (Zona A, plano) y <code>b ≥ 80°</code> (Zona B, polo norte).</li>
+              <ul>
+                <li><strong>Zona A (alta densidad)</strong>: cerca del Centro Galáctico (RA≈266.405°, Dec≈−28.936°); radio a elección (p. ej., 15°).</li>
+                <li><strong>Zona B (baja densidad)</strong>: cerca del Polo Galáctico Norte (RA≈192.8595°, Dec≈27.1284°); radio a elección (p. ej., 15°).</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><strong>Se realizaron las consultas ADQL</strong> con orden aleatorio (<code>random_index</code>) para muestreo.</li>
+        <li><strong>Se ejecutaron</strong> las consultas con <code>Gaia.launch_job_async</code> y <strong>descargaron</strong> resultados a CSV.</li>
+      </ol>
+
+      <h3>Consultas ADQL </h3>
+      <div class="two-col">
+        <div>
+          <h4>Zona A (plano galáctico)</h4>
+          <div class="code"><pre><code>SELECT TOP 80000
+  source_id, ra, dec, l, b,
+  phot_g_mean_mag, bp_rp,
+  parallax, parallax_error,
+  random_index
+FROM gaiadr3.gaia_source
+WHERE b BETWEEN -5 AND 5
+  AND phot_g_mean_mag IS NOT NULL
+  AND bp_rp IS NOT NULL
+ORDER BY random_index</code></pre></div>
+        </div>
+        <div>
+          <h4>Zona B (polo galáctico norte)</h4>
+          <div class="code"><pre><code>SELECT TOP 80000
+  source_id, ra, dec, l, b,
+  phot_g_mean_mag, bp_rp,
+  parallax, parallax_error,
+  random_index
+FROM gaiadr3.gaia_source
+WHERE b >= 80
+  AND phot_g_mean_mag IS NOT NULL
+  AND bp_rp IS NOT NULL
+ORDER BY random_index</code></pre></div>
+        </div>
+      </div>
+
+
+      <h3>Descarga programática desde Python</h3>
+      <div class="code"><pre><code>from astroquery.gaia import Gaia
+Gaia.MAIN_GAIA_TABLE = "gaiadr3.gaia_source"
+
+query = """
+SELECT TOP 80000 source_id, ra, dec, l, b,
+       phot_g_mean_mag, bp_rp,
+       parallax, parallax_error,
+       random_index
+FROM gaiadr3.gaia_source
+WHERE b BETWEEN -5 AND 5
+  AND phot_g_mean_mag IS NOT NULL
+  AND bp_rp IS NOT NULL
+ORDER BY random_index
+"""
+
+job = Gaia.launch_job_async(query)
+A = job.get_results()
+A.write("gaia_zoneA.csv", overwrite=True)
+
+# Se repite lo mismo con la consulta de Zona B</code></pre></div>
+
+      <div class="callout"><strong>Nota:</strong> Paso seguido, se será muy cuidadoso haciendo la validación de que los datos que tenemos por zonas efectivamente coincidan con nuestras especificaciones iniciales.</div>
+    </section>
+
+   <section class="panel" id="panel_metod" role="tabpanel" aria-labelledby="tab_metod" aria-hidden="true">
+  <h2>Metodología</h2>
+
+  <h3>1. Planteamiento general</h3>
+  <p>
+    El proyecto compara dos regiones físicamente distintas de la Vía Láctea utilizando datos del catálogo 
+    <strong>Gaia DR3</strong>. Las zonas fueron seleccionadas estratégicamente para representar ambientes astronómicos con 
+    condiciones muy diferentes de densidad estelar y presencia de polvo interestelar.
+  </p>
+
+  <h3>2. Racional de trabajar con Zonas A y B</h3>
+  <ul>
+    <li><strong>Zona A (plano galáctico, |b| ≤ 5°):</strong> alta densidad de estrellas, fuerte extinción y enrojecimiento por polvo; se esperan valores de <code>bp_rp</code> más altos.</li>
+    <li><strong>Zona B (polo galáctico norte, b ≥ 80°):</strong> menos polvo y menor densidad estelar; los colores observados reflejan mejor el valor intrínseco de las estrellas.</li>
+  </ul>
+  <p>
+    La comparación entre ambas zonas permite que las diferencias medidas en brillo y color respondan a propiedades físicas del 
+    medio interestelar y no a efectos instrumentales o de calibración.
+  </p>
+
+  <h3>3. Separación de las zonas en Gaia DR3</h3>
+  <p>
+    La partición espacial se realizó utilizando <strong>coordenadas galácticas</strong>. Cada consulta ADQL filtró directamente:
+  </p>
+  <ul>
+    <li><strong>Zona A:</strong> −5° ≤ <code>b</code> ≤ +5°</li>
+    <li><strong>Zona B:</strong> <code>b</code> ≥ 80°</li>
+  </ul>
+  <p>
+    Cada conjunto se descargó por separado y luego fue etiquetado mediante la variable <code>zone</code> para permitir su análisis comparativo dentro de un único marco.
+  </p>
+
+  <h3>4. Procesamiento previo</h3>
+  <ul>
+    <li>Estandarización de columnas clave.</li>
+    <li>Cálculo del indicador de calidad de la paralaje: <code>parallax_over_error</code>.</li>
+    <li>Aplicación de un filtro físico suave sobre <code>bp_rp</code>.</li>
+    <li>Unión estructurada mediante <code>bind_rows()</code>, formando la tabla <code>AB</code>.</li>
+  </ul>
+
+  <h3>5. Estructura del análisis</h3>
+
+  <h4>A. Análisis Exploratorio (EDA)</h4>
+  <ul>
+    <li>Histogramas y boxplots de magnitud G y color BP−RP.</li>
+    <li>Resúmenes descriptivos por zona (medias, medianas, IQR).</li>
+    <li>Evaluación de la calidad de paralaje mediante <code>parallax_over_error</code>.</li>
+    <li>Validación visual y numérica de diferencias coherentes con la física de las regiones.</li>
+  </ul>
+
+  <h4>B. Inferencia estadística</h4>
+  <ul>
+    <li>Pruebas t de Welch para comparar medias entre zonas.</li>
+    <li>Pruebas F para comparar varianzas.</li>
+    <li>Intervalos de confianza (95% y 99%).</li>
+    <li>Aplicaciones del TLC, consistencia, suficiencia y Rao–Blackwell.</li>
+    <li>análisis de errores Tipo I/II.</li>
+  </ul>
+
+  <div class="callout">
+    Esta metodología permite conectar principios teóricos de inferencia con fenómenos físicos reales del 
+    entorno galáctico observados por Gaia.
+  </div>
+</section>
+
+
+   <section class="panel" id="panel_contexto" role="tabpanel" aria-labelledby="tab_contexto" aria-hidden="true">
+    
+
+  <h2>Contexto físico: Vía Láctea, Gaia y las variables del proyecto</h2>
+
+  <h3>1. ¿Dónde estamos y qué estamos observando?</h3>
+  <p>
+    El universo observable contiene cientos de miles de millones de galaxias. Nuestro Sistema Solar pertenece a una de ellas:
+    la <strong>Vía Láctea</strong>, una galaxia espiral barrada con un diámetro de ~100&nbsp;000 años luz y cientos de miles 
+    de millones de estrellas. El Sol se encuentra en un brazo espiral llamado <strong>Brazo de Orión</strong>, a unos 26&nbsp;000 
+    años luz del centro galáctico. Es decir, observamos la galaxia desde dentro, como una persona que intenta entender un bosque 
+    estando en medio de los árboles.
+  </p>
+
+  <div class="two-col">
+    <figure>
+      <img src="./gaia_assets/image29.png"
+           alt="Galaxias en el universo."
+           style="width:100%;border-radius:10px;border:1px solid #243065" />
+      <figcaption class="sub">
+        Figura CF1 — Galaxias en el universo.
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="./gaia_assets/image30.png"
+           alt="Posición aproximada del Sol en el Brazo de Orión"
+           style="width:100%;border-radius:10px;border:1px solid #243065" />
+      <figcaption class="sub">
+        Figura CF2 — Posición aproximada del Sol en el Brazo de Orión, lejos del centro galáctico.
+      </figcaption>
+    </figure>
+  </div>
+
+  <figure>
+      <img src="./gaia_assets/image108.png"
+           alt="Vía Láctea de perfil."
+           style="width:100%;border-radius:10px;border:1px solid #243065" />
+      <figcaption class="sub">
+        Figura CF3 — mapa de polvo reconstruido con datos ópticos de Gaia (330–1050 nm) y visualizado en colores para mostrar la cantidad de polvo interestelar.
+      </figcaption>
+    </figure>
+
+
+     <figure>
+  <video src="./gaia_assets/video2.mp4"
+         autoplay
+         loop
+         muted
+         playsinline
+         style="width:100%;max-width:480px;border-radius:10px;border:1px solid #243065">
+    Tu navegador no soporta el elemento <code>video</code>.
+  </video>
+  <figcaption class="sub">
+    Figura CF4 — Video en alta velocidad de la vía Láctea desde el desierto de Atacama en Chile.
+  </figcaption>
+</figure>
+
+  <h3>2. Coordenadas y latitudes galácticas</h3>
+  <p>
+    Para describir posiciones en la galaxia se utiliza un sistema de <strong>coordenadas galácticas</strong>, similar a la
+    latitud y longitud de la Tierra. La <strong>longitud galáctica</strong> ℓ indica el ángulo alrededor del disco, mientras que
+    la <strong>latitud galáctica</strong> <code>b</code> mide el ángulo por encima o por debajo del plano de la galaxia:
+  </p>
+  <ul>
+    <li><code>b = 0°</code> corresponde al <strong>plano galáctico</strong>, donde se concentra la mayor parte de estrellas, gas y polvo.</li>
+    <li>Valores grandes y positivos/negativos de <code>b</code> apuntan hacia los <strong>polos galácticos</strong>, casi perpendiculares al disco.</li>
+  </ul>
+  <p>
+    En este proyecto se definieron dos regiones:
+  </p>
+  <ul>
+    <li><strong>Zona A:</strong> −5° ≤ b ≤ +5°, una franja densa alrededor del plano galáctico.</li>
+    <li><strong>Zona B:</strong> b ≥ 80°, una región cercana al polo galáctico norte, mucho más limpia de polvo.</li>
+  </ul>
+
+  <figure>
+    <img src="./gaia_assets/image44.png"
+         alt="Esquema de las coordenadas galácticas y definición de plano y polos"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura CF5 — Sistema de coordenadas galácticas. El plano corresponde a <code>b≈0°</code>; los polos, a <code>b≈±90°</code>.
+    </figcaption>
+  </figure>
+
+  <h3>3. Polvo interestelar, extinción y enrojecimiento</h3>
+  <p>
+    La Vía Láctea contiene <strong>polvo interestelar</strong>, pequeñas partículas sólidas concentradas principalmente en el plano
+    galáctico. Este polvo no atenúa toda la luz por igual: absorbe y dispersa con mayor eficacia la luz azul y deja pasar más luz roja.
+    El resultado es que la estrella se observa más débil y más roja de lo que realmente es, efecto conocido como
+    <strong>extinción</strong> y <strong>enrojecimiento</strong>.
+  </p>
+  <ul>
+    <li><strong>Zona A (plano):</strong> alta densidad de estrellas y mucho polvo → estrellas observadas más rojas, con valores de BP−RP altos.</li>
+    <li><strong>Zona B (polo):</strong> menos estrellas y poco polvo → colores más cercanos al valor intrínseco, con BP−RP más bajos.</li>
+  </ul>
+  <p>
+    Un análogo cotidiano es el amanecer o el atardecer: la atmósfera dispersa más la luz azul cuando el Sol está bajo, de modo que lo vemos
+    rojizo. En el plano galáctico ocurre algo similar, pero a escalas astronómicas y con polvo interestelar.
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image9.png"
+         alt="Esquema del enrojecimiento por polvo interestelar"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura CF6 — El polvo interestelar dispersa preferentemente la luz azul, produciendo enrojecimiento de las estrellas.
+    </figcaption>
+  </figure>
+
+  <h3>4. ¿Qué es Gaia y de dónde salen los datos?</h3>
+  <p>
+    <strong>Gaia</strong> es un telescopio espacial de la Agencia Espacial Europea (ESA) lanzado en 2013 para realizar el 
+    mapa 3D más preciso de la Vía Láctea. Observa más de mil millones de estrellas y mide, entre otras cosas:
+  </p>
+  <ul>
+    <li>Posición y movimiento (astrometría).</li>
+    <li>Brillo y color (fotometría).</li>
+    <li>Distancias mediante paralaje y, en muchos casos, velocidades radiales.</li>
+  </ul>
+  <p>
+    Los datos utilizados en este proyecto provienen del <strong>Gaia Data Release 3 (DR3)</strong>. En lugar de apuntar a un objeto
+    concreto, Gaia gira continuamente y “escanea” el cielo; dos telescopios proyectan las imágenes sobre una gran matriz de CCDs
+    que actúan como una megacámara científica.
+  </p>
+
+  <div class="two-col">
+    <figure>
+      <img src="./gaia_assets/image48.png"
+           alt="Ilustración del satélite Gaia en órbita"
+           style="width:100%;border-radius:10px;border:1px solid #243065" />
+      <figcaption class="sub">
+        Figura CF7 — Representación artística del satélite Gaia, diseñado para escanear el cielo de manera continua.
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="./gaia_assets/image23.png"
+           alt="Esquema del plano coordenada de la Vía Láctea"
+           style="width:100%;border-radius:10px;border:1px solid #243065" />
+      <figcaption class="sub">
+        Figura CF8 — Esquema simplificado del plano coordenada de la Vía Láctea
+      </figcaption>
+    </figure>
+  </div>
+  
+
+  <h3>5. Magnitud G: cómo mide Gaia el brillo</h3>
+  <p>
+    El brillo de una estrella se expresa mediante una <strong>magnitud aparente</strong>. En esta escala, un número más bajo
+    indica una estrella más brillante. Gaia define la <strong>magnitud G</strong> como el brillo medido en una banda muy ancha
+    que cubre casi todo el rango visible y parte del infrarrojo cercano.
+  </p>
+  <p>
+    En el plano focal, la estrella cruza varios CCD del <em>Astrometric Field</em> (AF), donde se registra el flujo total de luz.
+    Tras corregir efectos instrumentales y combinar muchas observaciones, se obtiene una magnitud G media muy precisa, almacenada
+    en la columna <code>phot_g_mean_mag</code> de la base de datos.
+  </p>
+
+  <h3>6. Color BP−RP: temperatura, polvo y “termómetro” estelar</h3>
+
+  Las estrellas tienen un color diferente perceptible en función de su temperatura. Piensen en una vela o un metal calentándose.
+
+  <figure>
+  <video src="./gaia_assets/video1.mp4"
+         autoplay
+         loop
+         muted
+         playsinline
+         style="width:100%;max-width:480px;border-radius:10px;border:1px solid #243065">
+    Tu navegador no soporta el elemento <code>video</code>.
+  </video>
+  <figcaption class="sub">
+    Figura CF9 — Simulación del color de una estrella en función de su temperatura superficial.
+  </figcaption>
+</figure>
+
+Por ejemplo, aquí podemos ver una imagen con las 25 estrellas más brillantes en el cielo.
+
+ <figure>
+      <img src="./gaia_assets/image113.png"
+           alt="25 Estrellas más brillantes en el cielo."
+           style="width:100%;border-radius:10px;border:1px solid #243065" />
+      <figcaption class="sub">
+        Figura CF10 — 25 estrellas más brillantes del cielo.
+      </figcaption>
+    </figure>
+
+  <p>
+    Para distinguir estrellas azules y calientes de estrellas rojas y frías, Gaia usa dos fotómetros:
+    <strong>BP</strong> (azul) y <strong>RP</strong> (rojo). Cada uno integra la luz en un rango de longitudes de onda distinto,
+    produciendo dos magnitudes, G_BP y G_RP. El <strong>índice de color</strong> se define como:
+  </p>
+  <p style="text-align:center;"><code>BP − RP = G_BP − G_RP</code></p>
+  <p>
+    Su interpretación es directa:
+  </p>
+  <ul>
+    <li><strong>BP−RP pequeño o negativo:</strong> estrella azul y caliente (más emisión en el azul).</li>
+    <li><strong>BP−RP grande:</strong> estrella roja y más fría, o luz enrojecida por polvo en la línea de visión.</li>
+  </ul>
+  <p>
+    En tu base de datos, la columna <code>bp_rp</code> es exactamente este índice de color ya calibrado. La combinación de magnitud G
+    y BP−RP permite relacionar las estrellas con su temperatura y con el efecto del polvo interestelar, lo que explica por qué la Zona A
+    (plano) muestra colores más rojos que la Zona B (polo).
+  </p>
+
+  <h3>7. Conclusión</h3>
+  <p>
+    Las dos bases del proyecto no son muestras artificiales, sino dos conjuntos de estrellas reales observadas por Gaia:
+    <strong>Zona A</strong> (plano galáctico) y <strong>Zona B</strong> (polo galáctico norte). Las diferencias que se observan en
+    las distribuciones de magnitud G y de color BP−RP reflejan diferencias físicas del cielo:
+  </p>
+  <ul>
+    <li>Más polvo y mayor densidad estelar en el plano.</li>
+    <li>Menos polvo y menos estrellas hacia el polo.</li>
+  </ul>
+  <p>
+    Sobre este contexto físico se apoyan las técnicas de inferencia estadística que se desarrollan en las siguientes secciones:
+    comparación de medias y varianzas, intervalos de confianza, pruebas de hipótesis, errores tipo I/II y potencia, todo ello
+    aplicado a datos astronómicos reales.
+  </p>
+</section>
+
+    <section class="panel" id="panel_caia" role="tabpanel" aria-labelledby="tab_caia" aria-hidden="true">
+      <h2>Gaia DR3 y descripción de columnas</h2>
+      <div class="two-col">
+        <div>
+          <h3>Campos usados</h3>
+          <ul>
+            <li><code>source_id</code> — identificador único</li>
+            <li><code>ra</code>, <code>dec</code> — coordenadas ecuatoriales</li>
+            <li><code>l</code>, <code>b</code> — coordenadas galácticas</li>
+            <li><code>phot_g_mean_mag</code> — brillo (menor = más brillante)</li>
+            <li><code>bp_rp</code> — color (menor = más azul; mayor = más rojo)</li>
+            <li><code>parallax</code>, <code>parallax_error</code> — paralaje y su error</li>
+            <li><code>parallax_over_error</code> — SNR de la paralaje</li>
+          </ul>
+        </div>
+        <div>
+          
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel_checks" role="tabpanel" aria-labelledby="tab_checks" aria-hidden="true">
+  <h2>Chequeos de calidad después de la unión</h2>
+
+  <h3>6.1 Verificación de estructura y columnas requeridas</h3>
+  <p>
+    Una vez construida la tabla unificada <code>AB</code>, se comprobó que todas las variables necesarias para el análisis
+    estuvieran presentes: fotometría (<code>phot_g_mean_mag</code>, <code>bp_rp</code>), paralaje
+    (<code>parallax</code>, <code>parallax_error</code>, <code>parallax_over_error</code>), posición
+    (<code>l</code>, <code>b</code>, <code>ra</code>, <code>dec</code>) y zona (<code>zone</code>). La ausencia de diferencias
+    entre el conjunto esperado y el conjunto encontrado indica que la estructura de <code>AB</code> es adecuada
+    para el resto del proyecto.
+  </p>
+
+  <div class="code">
+<pre><code>vars_required &lt;- c(
+  "phot_g_mean_mag","bp_rp",
+  "parallax","parallax_error","parallax_over_error",
+  "l","b","ra","dec","zone"
+)
+setdiff(vars_required, names(AB))  # Debe devolver character(0)</code></pre>
+  </div>
+
+  <h3>6.2 Rangos de magnitud G y color BP−RP</h3>
+  <p>
+    Se revisaron los rangos de las variables de fotometría para garantizar que no se hubieran introducido valores no físicos
+    durante la preparación. Las Figuras C1 y C2 recogen la salida de <code>summary()</code> para la magnitud G y para el color
+    BP−RP sobre la tabla completa <code>AB</code>.
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image102.png"
+         alt="Salida de summary() para la magnitud G en la tabla unificada AB"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura C1 — Resumen de la magnitud G en la tabla <code>AB</code>. Las magnitudes se encuentran en un intervalo coherente
+      con el rango fotométrico de Gaia DR3.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="./gaia_assets/image103.png"
+         alt="Salida de summary() para el índice de color BP−RP en la tabla unificada AB"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura C2 — Resumen del índice de color BP−RP en <code>AB</code>. El rango es físicamente razonable y no aparecen valores espurios.
+    </figcaption>
+  </figure>
+
+  <div class="code">
+<pre><code>summary(AB$phot_g_mean_mag)
+summary(AB$bp_rp)</code></pre>
+  </div>
+
+  <div class="callout">
+    <strong>Conclusión:</strong> las inspecciones de rango confirman que la fotometría G y el color BP−RP se encuentran dentro de
+    intervalos físicos esperados y que el filtro suave aplicado evitó valores no físicos sin distorsionar la distribución real
+    de los datos.
+  </div>
+
+  <h3>6.3 Verificación de coordenadas galácticas y partición espacial</h3>
+  <p>
+    Se confirmó la disponibilidad simultánea de coordenadas galácticas (<code>l</code>, <code>b</code>) y ecuatoriales
+    (<code>ra</code>, <code>dec</code>). Para asegurar que la división espacial entre plano y polo se mantiene tras la unión, se
+    analizó la distribución de la latitud galáctica <code>b</code> por zona. La Figura C3 muestra un ejemplo de tabla con mínimos,
+    cuartiles, mediana y máximos para <code>b</code> en cada zona.
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image104.png"
+         alt="Tabla o salida de summary() para la latitud galáctica b por zona"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura C3 — Resumen de la latitud galáctica <code>b</code> por zona. La Zona A se concentra alrededor de <code>b≈0°</code>;
+      la Zona B se sitúa por encima de <code>b≥80°</code>.
+    </figcaption>
+  </figure>
+
+  <div class="code">
+<pre><code>AB %&gt;% dplyr::group_by(zone) %&gt;%
+  dplyr::summarise(
+    b_min = min(b, na.rm = TRUE),
+    b_q25 = quantile(b, 0.25, na.rm = TRUE),
+    b_med = median(b, na.rm = TRUE),
+    b_q75 = quantile(b, 0.75, na.rm = TRUE),
+    b_max = max(b, na.rm = TRUE)
+  )</code></pre>
+  </div>
+
+  <h3>6.4 Comentario final de calidad</h3>
+  <p>
+    Los chequeos anteriores tienen como objetivo detectar cualquier desviación que pudiera
+    introducirse en pasos posteriores de manipulación de datos. Los resultados indican que la tabla unificada
+    <code>AB</code> conserva la estructura y las propiedades físicas necesarias para el análisis comparativo entre zonas y
+    para las etapas de inferencia estadística que se presentan en las secciones siguientes del informe.
+  </p>
+</section>
+
+
+   <section class="panel" id="panel_prep" role="tabpanel" aria-labelledby="tab_prep" aria-hidden="true">
+  <h2>Preparación, limpieza y unión de las bases</h2>
+
+  <h3>5. Preparación de las bases A y B</h3>
+  <p>
+    En esta etapa se aplicó la función de preparación <code>prep()</code> de forma separada a las tablas de la
+    <strong>Zona A</strong> y la <strong>Zona B</strong>, con el objetivo de dejarlas en un formato homogéneo y físicamente
+    consistente antes de unirlas en un único marco de análisis.
+  </p>
+
+  <div class="two-col">
+    <div>
+      <h4>Pasos realizados por <code>prep()</code></h4>
+      <ul>
+        <li>Estandarización de nombres de columnas clave (<code>ra</code>, <code>dec</code>, <code>l</code>, <code>b</code>, <code>phot_g_mean_mag</code>, <code>bp_rp</code>, <code>parallax</code>, <code>parallax_error</code>, etc.).</li>
+        <li>Cálculo de la razón señal–ruido de la paralaje: <code>parallax_over_error = parallax / parallax_error</code>.</li>
+        <li>Aplicación de un filtro físico suave sobre <code>bp_rp</code> para descartar únicamente valores claramente no físicos.</li>
+        <li>Añadido de la etiqueta de zona mediante la columna categórica <code>zone</code> con valores <code>"A"</code> o <code>"B"</code>.</li>
+      </ul>
+
+      <h4>Tamaños resultantes</h4>
+      <ul>
+        <li><strong>Zona A:</strong> 79&nbsp;956 registros (pérdida de 46 filas respecto a las 80&nbsp;000 iniciales).</li>
+        <li><strong>Zona B:</strong> 79&nbsp;994 registros (pérdida de 6 filas respecto a las 80&nbsp;000 iniciales).</li>
+        <li>Ambas tablas quedan con <strong>11 variables</strong> estandarizadas.</li>
+      </ul>
+
+      <div class="callout">
+        <strong>Interpretación:</strong> las pérdidas son marginales, lo que confirma que los filtros aplicados son
+        efectivamente suaves y no distorsionan el tamaño de las muestras.
+      </div>
+
+      <h4>Comportamiento del color BP−RP</h4>
+      <p>
+        Los resúmenes de <code>bp_rp</code> después de la preparación muestran que la Zona A presenta medias y medianas más
+        altas (estrellas más rojas) y la Zona B valores sistemáticamente más bajos (estrellas más azules). El máximo de BP−RP
+        es mayor en A, lo que apunta a la presencia de estrellas muy rojas o fuertemente enrojecidas, sin indicios de valores
+        espurios.
+      </p>
+
+      <p>
+        Una vez preparadas, las tablas se unieron mediante <code>bind_rows(A_clean, B_clean)</code> para formar el marco de
+        análisis unificado <code>AB</code>, manteniendo la trazabilidad de la zona de origen a través de la columna
+        <code>zone</code>.
+      </p>
+    </div>
+
+    <div class="code">
+<pre><code>prep &lt;- function(df, zone_lab){
+  df &lt;- df %&gt;%
+    dplyr::rename(
+      source_id = dplyr::any_of("source_id"),
+      ra        = dplyr::any_of("ra"),
+      dec       = dplyr::any_of("dec"),
+      l         = dplyr::any_of("l"),
+      b         = dplyr::any_of("b"),
+      phot_g_mean_mag = dplyr::any_of("phot_g_mean_mag"),
+      bp_rp     = dplyr::any_of("bp_rp"),
+      parallax  = dplyr::any_of("parallax"),
+      parallax_error = dplyr::any_of("parallax_error"),
+      random_index   = dplyr::any_of("random_index")
+    )
+
+  df &lt;- df %&gt;%
+    dplyr::mutate(
+      parallax_over_error = parallax / parallax_error,
+      zone = zone_lab
+    )
+
+  # Filtro físico suave sobre el color
+  df &lt;- df %&gt;%
+    dplyr::filter(is.na(bp_rp) | (bp_rp &gt; -2 &amp; bp_rp &lt; 6))
+
+  df &lt;- df %&gt;% dplyr::select(-dplyr::any_of("random_index"))
+  return(df)
+}
+
+A_clean &lt;- prep(A, "A")
+B_clean &lt;- prep(B, "B")
+AB      &lt;- dplyr::bind_rows(A_clean, B_clean)</code></pre>
+    </div>
+  </div>
+
+  <h3>5.1 Resúmenes tras la preparación</h3>
+  <p>
+    Para ilustrar el efecto de la preparación se calculó un resumen numérico por zona. Las Figuras P1 y P2 muestran la salida
+    de <code>summary()</code> para la magnitud G y para el índice de color BP−RP, respectivamente.
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image101.png"
+         alt="Salida de summary() para la magnitud G por zona después de la preparación"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura P1 — Resumen de la magnitud G por zona tras aplicar <code>prep()</code>. Se observan medias muy similares entre A y B.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="./gaia_assets/image100.png"
+         alt="Salida de summary() para el índice de color BP−RP por zona después de la preparación"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura P2 — Resumen del índice de color BP−RP por zona. La Zona A presenta colores más rojos que la Zona B.
+    </figcaption>
+  </figure>
+</section>
+
+
+   <section class="panel" id="panel_eda" role="tabpanel" aria-labelledby="tab_eda" aria-hidden="true">
+  <h2>Análisis Exploratorio de los Datos</h2>
+
+  <h3>1. Objetivo y alcance</h3>
+  <p>
+    El propósito del análisis exploratorio es caracterizar, de manera descriptiva, las dos regiones del cielo consideradas en el
+    proyecto: la <strong>Zona A</strong>, asociada al entorno del plano galáctico, y la <strong>Zona B</strong>, asociada al entorno
+    del polo galáctico norte. Antes de aplicar procedimientos de inferencia estadística, se busca:
+  </p>
+  <ul>
+    <li>Verificar que el comportamiento fotométrico y de color sea consistente con lo que se espera físicamente para el plano y el polo.</li>
+    <li>Identificar patrones relevantes entre zonas en términos de brillo y color.</li>
+    <li>Anticipar el comportamiento de los estadísticos que se utilizarán en los contrastes posteriores (por ejemplo, medias y varianzas).</li>
+    <li>Detectar asimetrías, valores atípicos y posibles desigualdades de varianza que influyan en la elección de pruebas de hipótesis.</li>
+  </ul>
+  <p>
+    En esta sección no se realiza inferencia estadística: se trabaja con las poblaciones observadas (subconjuntos de Gaia DR3 para cada zona)
+    y se obtienen descripciones numéricas y gráficas que servirán como <em>línea base</em> para la fase de inferencia.
+  </p>
+
+  <h3>2. Estrategia metodológica</h3>
+  <p>El EDA se apoyó en tres tipos de herramientas principales, separando siempre por zona (A y B):</p>
+  <ul>
+    <li><strong>Resúmenes numéricos</strong> (medias, medianas, cuartiles, desviaciones estándar) de la magnitud G y del color <code>bp_rp</code> (BP−RP).</li>
+    <li><strong>Histogramas comparativos</strong> de la magnitud G, superponiendo ambas zonas para comparar la forma de las distribuciones.</li>
+    <li><strong>Diagramas de caja (boxplots)</strong> de G y BP−RP, para comparar niveles centrales, dispersión y colas.</li>
+  </ul>
+  <p>
+    Estas herramientas permiten confirmar que los datos exhiben el comportamiento físico esperado y ofrecen una visión preliminar de las
+    diferencias entre plano y polo antes de pasar a los contrastes formales de hipótesis.
+  </p>
+
+  <h3>3. Resumen numérico por zona</h3>
+  <p>
+    Para cada zona se calcularon medidas de tendencia central y dispersión de las variables principales. A continuación se resume la lectura
+    cualitativa de esos resultados.
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image1.png"
+         alt="Resumen agrupado numérico por zona."
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura — Resumen numérico de las variables más importantes agrupadas por zonas.
+    </figcaption>
+  </figure>
+
+ <div class="two-col">
+  <div>
+    <h4>Zona A</h4>
+    <ul>
+      <li>n = 79 956</li>
+      <li>g_mean = 19.2</li>
+      <li>g_sd = 1.52</li>
+      <li>color_mean = 1.95</li>
+      <li>color_sd = 0.654</li>
+      <li>parallaxError_mean = 2.54</li>
+      <li>parallaxError_sd = 10.8</li>
+    </ul>
+  </div>
+
+  <div>
+    <h4>Zona B</h4>
+    <ul>
+      <li>n = 79 994</li>
+      <li>g_mean = 19.2</li>
+      <li>g_sd = 2.07</li>
+      <li>color_mean = 1.43</li>
+      <li>color_sd = 0.651</li>
+      <li>parallaxError_mean = 13.7</li>
+      <li>parallaxError_sd = 48.6</li>
+    </ul>
+  </div>
+</div>
+
+
+
+
+
+  <h4>3.1 Magnitud G</h4>
+  <ul>
+    <li>
+      <strong>Nivel central:</strong> las medias de la magnitud G en Zona A y Zona B son iguales a 1 cifra significativa (≈ 19.2), por lo que
+      no se anticipan diferencias relevantes en el brillo promedio entre las dos regiones.
+    </li>
+    <li>
+      <strong>Dispersión:</strong> la variabilidad es mayor en la <strong>Zona B</strong>. La desviación estándar y el rango intercuartílico
+      de G son más altos en el polo que en el plano, indicando una distribución más extendida de brillos.
+    </li>
+  </ul>
+  <p>
+    Desde el punto de vista inferencial, esto sugiere que, aunque la media de G es prácticamente la misma en ambas zonas, podría ser
+    interesante contrastar la <strong>igualdad de varianzas</strong> para resaltar la mayor dispersión observada en el polo galáctico.
+  </p>
+
+  
+
+  <h4>3.2 Color BP−RP</h4>
+  <ul>
+    <li>
+      <strong>Nivel central:</strong> el color BP−RP es sistemáticamente más alto (más “rojo”) en la <strong>Zona A</strong> que en la
+      <strong>Zona B</strong>. Las media en el plano están desplazadaa hacia valores mayores.
+    </li>
+    <li>
+      <strong>Dispersión:</strong> las desviaciones estándar del color son similares entre zonas.
+    </li>
+  </ul>
+  <p>
+    Este patrón es coherente con la física del medio interestelar: el plano galáctico contiene más polvo, que atenúa preferencialmente la
+    luz azul y produce un enrojecimiento más fuerte. Para la fase de inferencia, esto anticipa que las pruebas de igualdad de medias en BP−RP
+    probablemente rechazarán la hipótesis nula a favor de la alternativa “Zona A más roja que Zona B”.
+  </p>
+
+  <h3>4. Histogramas comparativos de la magnitud G</h3>
+  <p>
+    Se construyeron histogramas superpuestos de la magnitud G, usando el mismo número de bins para ambas zonas y un grado de transparencia
+    que permite visualizar el solapamiento.
+  </p>
+  <figure>
+    <img src="./gaia_assets/image39.png"
+         alt="Histogramas comparativos de la magnitud G para las Zonas A y B"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura E1 — Histogramas de la magnitud G por zona. La Zona A (plano) y la Zona B (polo) presentan medias similares pero
+      diferente dispersión.
+    </figcaption>
+  </figure>
+  <p>De la inspección visual se destacan varios puntos:</p>
+  <ul>
+    <li>Ambas distribuciones comparten un pico principal en torno a G ≈ 19, coherente con las medidas de tendencia central.</li>
+    <li>
+      La <strong>Zona B</strong> muestra una cola más extendida tanto hacia magnitudes bajas (estrellas más brillantes) como hacia magnitudes altas
+      (estrellas más débiles), confirmando su mayor dispersión.
+    </li>
+    <li>
+      Las distribuciones son <strong>asimétricas hacia la derecha</strong> (cola hacia magnitudes altas), reflejando la gran cantidad de estrellas
+      débiles detectadas hasta el límite instrumental de Gaia (G ≈ 21).
+    </li>
+  </ul>
+  <p>
+    En la Zona A, el polvo del plano galáctico tiende a atenuar la luz, reduciendo el número de estrellas extremadamente brillantes que
+    aparecen en el catálogo; en la Zona B, con menos polvo, se observa una fracción relativamente mayor de estrellas brillantes.
+  </p>
+
+  <h3>5. Boxplots de magnitud G</h3>
+  <p>
+    Los diagramas de caja permiten comparar de forma compacta la mediana, el rango intercuartílico y la extensión de las colas de la
+    magnitud G entre las dos zonas.
+  </p>
+  <figure>
+    <img src="./gaia_assets/image41.png"
+         alt="Boxplots de la magnitud G por zona"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura E2 — Boxplots de la magnitud G por zona. Las medianas son similares, pero la Zona B presenta un IQR y colas más extensas.
+    </figcaption>
+  </figure>
+  <p>
+    La mediana de G en ambas zonas es casi idéntica, mientras que la caja y los bigotes son más largos en la Zona B. Esto confirma la
+    lectura del histograma: el brillo típico es comparable, pero la variabilidad es mayor en el polo, donde coexisten más estrellas muy
+    brillantes y muy débiles.
+  </p>
+
+  <h3>6. Boxplots del color BP−RP</h3>
+  <p>
+    Para el color BP−RP se construyeron diagramas de caja separados por zona, observándose un patrón claramente distinto al de G.
+  </p>
+  <figure>
+    <img src="./gaia_assets/image37.png"
+         alt="Boxplots del color BP−RP por zona"
+         style="width:100%;border-radius:10px;border:1px solid #243065" />
+    <figcaption class="sub">
+      Figura E3 — Boxplots del color BP−RP por zona. La Zona A presenta colores más rojos y ligeramente más dispersos.
+    </figcaption>
+  </figure>
+  <ul>
+    <li>
+      La <strong>mediana de BP−RP</strong> en la Zona A es claramente más alta que en la Zona B, confirmando que las estrellas del plano se
+      observan más rojas en promedio.
+    </li>
+    <li>
+      La dispersión del color es algo mayor en la Zona A, lo que puede interpretarse como resultado de columnas de polvo diferentes a lo
+      largo de distintas líneas de visión.
+    </li>
+    <li>
+      La Zona B muestra una distribución de colores más concentrada alrededor de valores más azules, como se espera en una región con baja extinción.
+    </li>
+  </ul>
+
+  <h3>7. Implicaciones para la fase de inferencia</h3>
+  <p>
+    Los patrones identificados en el EDA orientan la elección de las pruebas de hipótesis que se desarrollan más adelante en el proyecto:
+  </p>
+  <ul>
+    <li>
+      Para <strong>magnitud G</strong>, las medias similares y la diferencia de dispersión motivan contrastes de igualdad de varianzas entre zonas,
+      mientras que se espera no encontrar diferencias significativas en las medias.
+    </li>
+    <li>
+      Para <strong>color BP−RP</strong>, la separación clara en las medianas y medias entre A y B sugiere que las pruebas de igualdad de medias
+      probablemente detectarán diferencias estadísticamente significativas.
+    </li>
+  </ul>
+  <p>
+    Además, el hecho de contar con tamaños muestrales grandes y datos previamente depurados refuerza la aplicabilidad del Teorema del Límite
+    Central y de pruebas tipo <em>t</em>/Z en las secciones posteriores.
+  </p>
+
+  <h3>8. Código ilustrativo del EDA</h3>
+  <details>
+    <summary>Código R de ejemplo para resúmenes, histogramas y boxplots</summary>
+    <div class="code">
+<pre><code># Resumen numérico por zona
+AB |&gt; dplyr::group_by(zone) |&gt; dplyr::summarise(
+  g_mean   = mean(phot_g_mean_mag, na.rm = TRUE),
+  g_median = median(phot_g_mean_mag, na.rm = TRUE),
+  g_sd     = sd(phot_g_mean_mag, na.rm = TRUE),
+  color_mean   = mean(bp_rp, na.rm = TRUE),
+  color_median = median(bp_rp, na.rm = TRUE),
+  color_sd     = sd(bp_rp, na.rm = TRUE),
+  n = dplyr::n()
+)
+
+# Histograma comparativo de G
+ggplot(AB, aes(phot_g_mean_mag, fill = zone)) +
+  geom_histogram(alpha = 0.45, bins = 80, position = "identity") +
+  labs(
+    title = "Distribución de magnitud G por zona",
+    x = "phot_g_mean_mag (G) — menores = más brillantes",
+    y = "Conteo"
+  ) +
+  theme_minimal()
+
+# Boxplots de G por zona
+ggplot(AB, aes(x = zone, y = phot_g_mean_mag, fill = zone)) +
+  geom_boxplot(alpha = 0.6) +
+  labs(
+    title = "Boxplots de magnitud G por zona",
+    x = "Zona",
+    y = "phot_g_mean_mag (G)"
+  ) +
+  theme_minimal()
+
+# Boxplots de color BP−RP por zona
+ggplot(AB, aes(x = zone, y = bp_rp, fill = zone)) +
+  geom_boxplot(alpha = 0.6) +
+  labs(
+    title = "Boxplots de color BP−RP por zona",
+    x = "Zona",
+    y = "bp_rp (BP−RP)"
+  ) +
+  theme_minimal()</code></pre>
+    </div>
+  </details>
+</section>
+
+    <section class="panel" id="panel_inferencia" role="tabpanel" aria-labelledby="tab_inferencia" aria-hidden="true">
+      <h2>Inferencia estadística</h2>
+      <p>Subsecciones con demostraciones empíricas y resultados:</p>
+      <details open>
+        <summary><strong>Teorema del Límite Central (TLC)</strong></summary>
+        
+        <h2>Ilustración del Teorema del Límite Central (TLC)</h2>
+
+
+  <p>En esta sección se demuestra cómo el Teorema del Límite Central actúa sobre tres variables físicas del catálogo 
+     <em>Gaia DR3</em>: <strong>phot_g_mean_mag</strong>, <strong>bp_rp</strong> y <strong>parallax_over_error</strong>. 
+     Para cada zona (A y B) se construyó la distribución estandarizada de las medias muestrales 
+     \( Z_n = (\bar X_n - \hat\mu) / (\hat\sigma/\sqrt{n}) \) a partir de remuestreos repetidos.</p>
+
+     <figure>
+      <img src="./gaia_assets/image115.png" alt="Distribución real de G.">
+      <figcaption class="sub">Figura — Distribución real de G.</figcaption>
+  </figure>
+
+  <figure>
+      <img src="./gaia_assets/image116.png" alt="Distribución real del color.">
+      <figcaption class="sub">Figura — Distribución real del color.</figcaption>
+  </figure>
+
+  <figure>
+      <img src="./gaia_assets/image117.png" alt="Distribución real del Error de Paralaje.">
+      <figcaption class="sub">Figura — Distribución real del Error de Paralaje.</figcaption>
+  </figure>
+     
+
+  <h3>Metodología aplicadas</h3>
+  <ul>
+    <li>Selección de una variable dentro de una zona (A o B).</li>
+    <li>Estimación de parámetros empíricos \( \hat\mu \) y \( \hat\sigma \) a partir de ~80k observaciones.</li>
+    <li>Generación de 5000 réplicas de medias muestrales para tamaños \( n = 5, 10, 30, 100, 500, 1000 \).</li>
+    <li>Estandarización mediante \( Z_n = (\bar X_n - \hat\mu)/(\hat\sigma/\sqrt{n}) \).</li>
+    <li>Construcción de histogramas facetados con la curva Normal estándar superpuesta.</li>
+  </ul>
+
+  <p>Las distribuciones resultantes permiten observar de manera clara cómo la forma de \( Z_n \) converge hacia la 
+     distribución Normal estándar cuando el tamaño muestral aumenta, tal como establece el TLC.</p>
+
+    <h3>Simulación en Python del Teorema del Límite Central</h3>
+  <p>
+    Además de la implementación en R, se desarrolló una simulación independiente en 
+    <strong>Python</strong> para ilustrar de forma dinámica el Teorema del Límite Central. 
+    A partir de la base unificada <code>AB</code> (exportada desde R a CSV), se replicó el esquema de remuestreo:
+  </p>
+
+  <p>
+    En la animación generada se muestran simultáneamente tres paneles:
+  </p>
+  <ul>
+    <li><strong>Panel izquierdo:</strong> distribución de <span>\(Z_n\)</span> para <code>phot_g_mean_mag</code> (magnitud G) en la Zona A.</li>
+    <li><strong>Panel central:</strong> distribución de <span>\(Z_n\)</span> para <code>parallax_over_error</code> en la Zona A.</li>
+    <li><strong>Panel derecho:</strong> distribución de <span>\(Z_n\)</span> para <code>parallax_over_error</code> en la Zona B.</li>
+  </ul>
+
+  <p>
+    Para cada tamaño muestral <span>\(n\)</span>, se actualizan simultáneamente los tres histogramas estandarizados y se superpone la 
+    densidad de una Normal estándar <span>\(\mathcal{N}(0,1)\)</span>. La evolución cuadro a cuadro permite observar:
+  </p>
+  <ul>
+    <li>Una convergencia relativamente rápida hacia la campana normal en el caso de la magnitud G (Zona A).</li>
+    <li>Una convergencia mucho más lenta y deformada para <code>parallax_over_error</code>, tanto en la Zona A como en la Zona B, debido a la fuerte asimetría y a las colas largas de su distribución original.</li>
+  </ul>
+
+  <figure>
+    <video src="./gaia_assets/video3.mp4"
+           controls
+           style="width:100%;max-width:900px;border-radius:12px;border:1px solid #243065">
+      Tu navegador no soporta el elemento <code>video</code>.
+    </video>
+    <figcaption class="sub">
+      Animación — Evolución de la distribución estandarizada \(Z_n\) para la magnitud G (Zona A)
+      y para <code>parallax_over_error</code> en Zonas A y B, a medida que aumenta el tamaño muestral \(n\).
+    </figcaption>
+  </figure>
+
+
+  <h3>Resultados principales</h3>
+
+  <h4>Variable: G para zona A</h4>
+  <p>Distribución relativamente simétrica → convergencia muy rápida. Con n ≈ 30 la distribución de \(Z_n\) es prácticamente normal.</p>
+  <figure>
+      <img src="./gaia_assets/image14.png" alt="TLC bp_rp Zona A">
+      <figcaption class="sub">Figura — Convergencia del TLC para <code>G</code> (Zona A).</figcaption>
+  </figure>
+
+  <h4>Variable: <code>parallax_over_error Zona A</code> (SNR)</h4>
+  <p>Distribución fuertemente sesgada y con colas muy pesadas → convergencia lenta. Sólo para n ≥ 100–1000 la forma de \(Z_n\) se acerca visualmente a la Normal estándar.</p>
+  <figure>
+      <img src="./gaia_assets/image22.png" alt="TLC parallax_over_error Zona A">
+      <figcaption class="sub">Figura — Convergencia del TLC para SNR de paralaje (Zona A).</figcaption>
+  </figure>
+
+  <h4>Variable: <code>parallax_over_error Zona B</code> (SNR)</h4>
+  <p>Se observa un comportamiento muy parecido a la Zona A..</p>
+  <figure>
+      <img src="./gaia_assets/image42.png" alt="TLC parallax_over_error Zona A">
+      <figcaption class="sub">Figura — Convergencia del TLC para SNR de paralaje (Zona B).</figcaption>
+
+  
+
+  </figure>
+
+  <h3>Conclusiones</h3>
+  <p>Los resultados confirman que el TLC se cumple para las variables trabajadas, pero a ritmos distintos. El brillo converge 
+     rápidamente y la razón parámetro-error requiere tamaños muestrales más grandes para converger.
+     Esto refleja que la velocidad de convergencia depende directamente de la asimetría y forma de la distribución original.</p>
+
+      </details>
+      <details>
+        <summary><strong>Consistencia</strong></summary>
+        
+  <h2>Consistencia de la media muestral</h2>
+
+  <p>
+    En estadística, un estimador <span>\(\hat\theta_n\)</span> de un parámetro <span>\(\theta\)</span> se dice
+    <strong>consistente</strong> si, a medida que el tamaño muestral <span>\(n\)</span> aumenta, dicho estimador converge
+    en probabilidad hacia el valor verdadero:
+  </p>
+
+  <p class="sub">
+    $$ \hat\theta_n \xrightarrow{p} \theta \quad \text{cuando } n \to \infty. $$
+  </p>
+
+  <p>
+    En este proyecto se estudia la consistencia de la <strong>media muestral</strong> 
+    <span>\(\bar X_n\)</span> como estimador de la media poblacional <span>\(\mu\)</span> para variables 
+    astrofísicas como <code>bp_rp</code> (color) y <code>phot_g_mean_mag</code> (magnitud G) en las Zonas A y B
+    definidas a partir de <em>Gaia DR3</em>.
+  </p>
+
+  <h3>Simulación de consistencia en Python</h3>
+  <p>
+    De forma complementaria, se implementó una simulación en <strong>Python</strong> utilizando la base unificada 
+    <code>AB.csv</code> exportada desde R. La lógica es análoga:
+  </p>
+  <ul>
+    <li>Se selecciona una variable (por ejemplo, <code>bp_rp</code>) y una zona (por ejemplo, Zona A).</li>
+    <li>Se calcula la media empírica <span>\(\hat\mu\)</span> y la desviación estándar <span>\(\hat\sigma\)</span> de la zona.</li>
+    <li>Para cada tamaño muestral <span>\(n\)</span> en una grilla (por ejemplo, <span>\(n = 20, 50, 100, 200, 500, 1000\)</span>) se generan múltiples muestras bootstrap con reemplazo.</li>
+    <li>Se calcula la media muestral <span>\(\bar X_n\)</span> en cada réplica y se almacena para estudiar su distribución.</li>
+    <li>Se calcula el error cuadrático medio empírico <span>\(\text{RMSE}(n)\)</span> respecto a <span>\(\hat\mu\)</span> y se compara con la tasa teórica <span>\(\hat\sigma / \sqrt{n}\)</span>.</li>
+  </ul>
+
+  <p>
+    Para visualizar el proceso dinámicamente, se generó un video en formato <code>.mp4</code> con dos paneles:
+  </p>
+  <ul>
+    <li><strong>Panel izquierdo:</strong> violines de las distribuciones de <span>\(\bar X_n\)</span> para los distintos tamaños muestrales, con una línea horizontal en <span>\(\hat\mu\)</span>.</li>
+    <li><strong>Panel derecho:</strong> evolución del <span>\(\text{RMSE}(n)\)</span> en función de <span>\(n\)</span>, en escala log–log, comparando el RMSE empírico con la curva teórica <span>\(\hat\sigma / \sqrt{n}\)</span>.</li>
+  </ul>
+
+  <figure>
+    <video src="./gaia_assets/video4.mp4"
+           controls
+           style="width:100%;max-width:900px;border-radius:12px;border:1px solid #243065">
+      Tu navegador no soporta el elemento <code>video</code>.
+    </video>
+    <figcaption class="sub">
+      Animación — Simulación en Python de la consistencia de la media muestral para una variable seleccionada
+      (por ejemplo, <code>bp_rp</code> en la Zona A). A medida que aumenta el tamaño muestral \(n\), los violines
+      de \(\bar X_n\) se estrechan alrededor de \(\hat\mu\) y el RMSE decrece aproximadamente como \(\hat\sigma / \sqrt{n}\).
+    </figcaption>
+  </figure>
+
+  <h3>Metodología (R)</h3>
+  <p>
+    La función <code>consistencia()</code> en R implementa una ilustración empírica basada en remuestreo bootstrap:
+  </p>
+  <ul>
+    <li>Se filtran los datos de la zona elegida (<code>zone ∈ {A,B}</code>) y se extrae la variable de interés (<code>var</code>).</li>
+    <li>Se eliminan valores no finitos y, opcionalmente, se recortan colas extremas mediante cuantiles.</li>
+    <li>Se calcula la media empírica <span>\(\hat\mu\)</span> de la zona, que se toma como aproximación del valor verdadero <span>\(\mu\)</span>.</li>
+    <li>Para cada tamaño muestral <span>\(n \in \{20, 50, 100, 200, 500, 1000\}\)</span> se generan múltiples muestras bootstrap con reemplazo.</li>
+    <li>En cada réplica se calcula la media muestral <span>\(\bar X_n\)</span>, obteniendo su distribución empírica para cada valor de <span>\(n\)</span>.</li>
+  </ul>
+
+  <p>
+    El resultado en R se representa mediante gráficos tipo “violín” y boxplots, con <span>\(n\)</span> en el eje horizontal y las medias
+    <span>\(\bar X_n\)</span> en el eje vertical. Una línea horizontal punteada marca la media empírica <span>\(\hat\mu\)</span> de la zona.
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image21.png" alt="Consistencia de la media bp_rp Zona A" style="width:100%;max-width:900px;border-radius:12px;border:1px solid #243065">
+    <figcaption class="sub">
+      Figura — Consistencia de la media muestral para <code>bp_rp</code> en la Zona A.
+      Cada violín muestra la distribución de <span>\(\bar X_n\)</span> para un tamaño muestral
+      <span>\(n\)</span>; la línea punteada indica la media empírica <span>\(\hat\mu\)</span>.
+    </figcaption>
+  </figure>
+
+  <p>
+    Para tamaños muestrales pequeños (por ejemplo, <span>\(n = 20\)</span>), la distribución de 
+    <span>\(\bar X_n\)</span> es relativamente ancha y las medias pueden alejarse apreciablemente de 
+    <span>\(\hat\mu\)</span>. A medida que <span>\(n\)</span> crece
+    (<span>\(n = 200, 500, 1000\)</span>), los violines se vuelven más delgados y sus boxplots se
+    concentran alrededor de la línea punteada: la variabilidad de la media disminuye y las estimaciones
+    se “pegan” al valor de referencia <span>\(\mu\)</span>.
+  </p>
+
+  <h3>Conclusión</h3>
+  <p>
+    Las simulaciones en R y Python llegan al mismo mensaje: la media muestral <span>\(\bar X_n\)</span> es un
+    estimador <strong>consistente</strong> de la media poblacional <span>\(\mu\)</span>. Con tamaños muestrales
+    pequeños, la media puede variar notablemente de una muestra a otra; sin embargo, a medida que aumenta 
+    <span>\(n\)</span>, la distribución de <span>\(\bar X_n\)</span> se contrae alrededor de <span>\(\mu\)</span> 
+    y el error cuadrático medio decrece con la tasa esperada <span>\(\mathcal{O}(1/\sqrt{n})\)</span>. En el contexto
+    de <em>Gaia</em>, esto se traduce en estimaciones cada vez más estables del brillo, color o SNR de una región del cielo
+    al incorporar un número creciente de estrellas en la muestra.
+  </p>
+
+      </details>
+      <details>
+        <summary><strong>Suficiencia</strong></summary>
+        
+  <h2>Suficiencia (ilustración con modelo Normal)</h2>
+
+  <p>
+    En inferencia paramétrica, un estadístico <span>\(T(X_1,\dots,X_n)\)</span> es 
+    <strong>suficiente</strong> para un parámetro <span>\(\theta\)</span> si, una vez conocido 
+    <span>\(T\)</span>, los datos <span>\(X_1,\dots,X_n\)</span> no aportan información adicional 
+    sobre <span>\(\theta\)</span>. 
+  </p>
+
+  
+  <p>
+    la pareja 
+    <span>\((\bar X, S^2)\)</span> (media y varianza muestral) es suficiente para 
+    <span>\((\mu,\sigma^2)\)</span>.
+  </p>
+
+  <h3>Contexto en el proyecto</h3>
+  <p>
+    Para ilustrar este concepto con datos reales de <em>Gaia DR3</em>, se utiliza la variable 
+    <code>bp_rp</code> (color) en una de las zonas del proyecto (Zona A). El objetivo 
+    no es demostrar que <code>bp_rp</code> sea perfectamente Normal, sino mostrar cómo, bajo el 
+    supuesto de normalidad, la media y la desviación estándar muestral permiten reconstruir una 
+    curva teórica que se asemeja al histograma observado.
+  </p>
+
+  <h3>Procedimiento en R</h3>
+  <p>
+    La función <code>suficiencia()</code> implementa el siguiente esquema:
+  </p>
+  <ul>
+    <li>Se filtran los datos de la zona elegida (<code>zone = "A"</code>) y se extrae la variable <code>var</code>.</li>
+    <li>Se descartan valores no finitos y se toma una muestra aleatoria de tamaño <span>\(n\)</span> (<span>\(n = 2000\)</span>).</li>
+    <li>Se calculan la media muestral <span>\(\bar X\)</span> y la desviación estándar muestral <span>\(S\)</span>.</li>
+    <li>Usando solo esos dos números, se construye una distribución Normal teórica 
+        <span>\(\mathcal{N}(\bar X,S^2)\)</span> y se evalúa su densidad en una grilla de valores.</li>
+    <li>Finalmente, se dibuja el histograma de la muestra real y se superpone la curva Normal generada a partir de <span>\(\bar X\)</span> y <span>\(S\)</span>.</li>
+  </ul>
+
+  <figure>
+    <img src="./gaia_assets/image24.png"
+         alt="Suficiencia: histograma de bp_rp y Normal ajustada en Zona A"
+         style="width:100%;max-width:900px;border-radius:12px;border:1px solid #243065">
+    <figcaption class="sub">
+      Figura — Ilustración de suficiencia para <code>bp_rp</code> en la Zona A. 
+      El histograma (gris) corresponde a una muestra real de tamaño \(n \approx 2000\), 
+      mientras que la curva roja representa una Normal \(\mathcal{N}(\bar X, S^2)\) construida 
+      únicamente a partir de la media y la desviación estándar muestral.
+    </figcaption>
+  </figure>
+
+  <h3>Interpretación</h3>
+  <p>
+    Aunque la coincidencia entre la curva Normal y el histograma no es perfecta —porque 
+    <code>bp_rp</code> no es exactamente Normal—, la aproximación es suficientemente buena como 
+    para resaltar la idea central:
+  </p>
+  <ul>
+    <li>Si aceptamos el modelo Normal, entonces la pareja \((\bar X, S^2)\) contiene toda la información relevante sobre \((\mu,\sigma^2)\).</li>
+    <li>Los datos individuales \(X_i\) no aportan información adicional sobre los parámetros una vez que conocemos estos estadísticos.</li>
+  </ul>
+
+
+      </details>
+      <details>
+        <summary><strong>Intervalos de confianza</strong></summary>
+
+  <h2>Intervalos de confianza para la media</h2>
+
+  <p>
+    Para estimar la media poblacional <span>\(\mu\)</span> de variables como <code>bp_rp</code> en las distintas zonas
+    del proyecto, utilizamos <strong>intervalos de confianza</strong> (IC) basados en la distribución t de Student, asumiendo
+    varianza desconocida. Un IC bilateral de nivel <span>\(1-\alpha\)</span> tiene la forma:
+  </p>
+
+  <p class="sub">
+    $$ \bar X \pm t_{1-\alpha/2,\;n-1} \cdot \frac{S}{\sqrt{n}}, $$
+  </p>
+
+  <p>
+    donde <span>\(\bar X\)</span> es la media muestral, <span>\(S\)</span> la desviación estándar muestral y 
+    <span>\(t_{1-\alpha/2,\;n-1}\)</span> el cuantil correspondiente de la distribución t de Student con 
+    <span>\(n-1\)</span> grados de libertad. El nivel de confianza (por ejemplo, 95% o 99%) controla la 
+    <em>proporción esperada</em> de intervalos que contienen el valor real de <span>\(\mu\)</span> cuando se repite el procedimiento
+    muchas veces.
+  </p>
+
+  <h3>Diseño del experimento</h3>
+  <p>
+    Para visualizar el comportamiento de los IC en nuestro contexto, se implementó una simulación basada en remuestreo bootstrap 
+    mediante la función <code>ci_demo()</code>:
+  </p>
+  <ul>
+    <li>Variable de ejemplo: <code>bp_rp</code>.</li>
+    <li>Zonas: <code>A</code> y <code>B</code> (analizadas por separado).</li>
+    <li>Tamaños muestrales: <span>\(n = 30\)</span> y <span>\(n = 200\)</span>.</li>
+    <li>Número de réplicas por combinación: <span>\(400\)</span> muestras bootstrap.</li>
+    <li>Niveles de confianza: <span>\(95\%\)</span> y <span>\(99\%\)</span>.</li>
+  </ul>
+
+  <p>
+    Para cada réplica se construye un intervalo t para la media, usando la media y la desviación estándar de la muestra.
+    La media de toda la zona (calculada con todos los datos disponibles) se toma como aproximación de la media “verdadera”
+    <span>\(\hat\mu\)</span>, frente a la cual evaluamos si cada intervalo la contiene o no.
+  </p>
+
+  <h3>IC del 95%: efecto del tamaño muestral</h3>
+  <p>
+    La siguiente figura muestra, para la Zona A y nivel de confianza del 95%, los 400 intervalos construidos para 
+    <span>\(n = 30\)</span> (panel superior) y <span>\(n = 200\)</span> (panel inferior). Cada segmento horizontal representa
+    un intervalo, coloreado según si contiene o no la media empírica <span>\(\hat\mu\)</span>, indicada por la línea vertical punteada.
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image36.png"
+         alt="Intervalos de confianza 95% para la media de bp_rp en Zona A"
+         style="width:100%;max-width:900px;border-radius:12px;border:1px solid #243065">
+    <figcaption class="sub">
+      Figura — Intervalos de confianza del 95% para la media de <code>bp_rp</code> en la Zona A.
+      Verde: intervalos que contienen \(\hat\mu\); rojo: intervalos que no la contienen.
+      Panel superior: \(n = 30\); panel inferior: \(n = 200\).
+    </figcaption>
+  </figure>
+
+  <p>
+    La cobertura empírica observada es cercana al 95% en ambos tamaños muestrales (valores típicos: 
+    ≈0.955 para \(n=30\) y ≈0.950 para \(n=200\)), lo que confirma que el procedimiento de construcción 
+    de los IC está calibrado correctamente para este nivel. Sin embargo, el <strong>ancho promedio</strong> 
+    de los intervalos se reduce de forma notable al pasar de \(n = 30\) a \(n = 200\), en línea con la teoría,
+    que predice una disminución aproximadamente proporcional a \(1/\sqrt{n}\).
+  </p>
+
+  <h3>IC del 99%: efecto del nivel de confianza</h3>
+  <p>
+    Para ilustrar el efecto de aumentar el nivel de confianza, se repitió el mismo experimento usando 
+    <span>\(99\%\)</span> en lugar de <span>\(95\%\)</span>, por ejemplo en la Zona B:
+  </p>
+
+  <figure>
+    <img src="./gaia_assets/image19.png"
+         alt="Intervalos de confianza 99% para la media de bp_rp en Zona B"
+         style="width:100%;max-width:900px;border-radius:12px;border:1px solid #243065">
+    <figcaption class="sub">
+      Figura — Intervalos de confianza del 99% para la media de <code>bp_rp</code> en la Zona B.
+      Comparación entre \(n = 30\) y \(n = 200\). Los intervalos son visiblemente más anchos,
+      pero la proporción de intervalos que contienen \(\hat\mu\) aumenta.
+    </figcaption>
+  </figure>
+
+  <p>
+    Al incrementar el nivel de confianza:
+  </p>
+  <ul>
+    <li>La <strong>cobertura</strong> se acerca ahora al 99% (es raro ver intervalos rojos).</li>
+    <li>El <strong>ancho</strong> de los intervalos aumenta en ambos tamaños muestrales: para lograr mayor seguridad en la cobertura, se sacrifica precisión.</li>
+    <li>El patrón respecto a \(n\) se mantiene: aun con 99% de confianza, los intervalos con \(n = 200\) siguen siendo más estrechos que los de \(n = 30\).</li>
+  </ul>
+
+  <h3>Conclusiones</h3>
+  <p>
+    El experimento con <code>bp_rp</code> muestra de forma visual dos ideas fundamentales sobre los intervalos de confianza:
+  </p>
+  <ul>
+    <li>
+      El <strong>nivel de confianza</strong> (95%, 99%, etc.) está asociado a la 
+      <em>cobertura</em>: cuántas veces el procedimiento produce intervalos que contienen el valor real de \(\mu\)
+      cuando repetimos el muestreo.
+    </li>
+    <li>
+      El <strong>tamaño muestral</strong> controla la <em>precisión</em> de los intervalos (su ancho), pero no el nivel de confianza:
+      muestras más grandes permiten intervalos más estrechos para el mismo nivel de confianza.
+    </li>
+  </ul>
+
+  <p>
+    En el contexto de las zonas A y B de <em>Gaia</em>, esto significa que, si seguimos el mismo esquema de construcción
+    de IC, podemos cuantificar de forma clara cuánta variabilidad cabe esperar en las estimaciones de la media de color
+    o brillo cuando trabajamos con muestras moderadas (\(n \approx 30\)) frente a muestras más grandes
+    (\(n \approx 200\)), y cómo cambia ese comportamiento al exigir más o menos confianza (95% vs. 99%).
+  </p>
+
+
+
+        
+  <h2>Simulación en Python de intervalos de confianza</h2>
+
+  <p>
+    Se implementó
+    una simulación completa en <strong>Python</strong> con la base <code>AB.csv</code>, que contiene las
+    observaciones de las Zonas A y B.
+  </p>
+
+
+
+  <p>
+    A continuación se muestran
+    los dos videos correspondientes a las Zonas A y B:
+  </p>
+
+  <figure>
+    <video src="./gaia_assets/video5.mp4"
+           controls
+           style="width:100%;max-width:900px;border-radius:12px;border:1px solid #243065">
+      Tu navegador no soporta el elemento <code>video</code>.
+    </video>
+    <figcaption class="sub">
+      Animación — Zona A, intervalos de confianza del 95% para la media de <code>bp_rp</code>.
+      Panel superior: \(n = 30\); panel inferior: \(n = 200\). En cada caso, la cobertura acumulada
+      converge gradualmente hacia el nivel teórico del 95%.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <video src="./gaia_assets/video6.mp4"
+           controls
+           style="width:100%;max-width:900px;border-radius:12px;border:1px solid #243065">
+      Tu navegador no soporta el elemento <code>video</code>.
+    </video>
+    <figcaption class="sub">
+      Animación — Zona B, intervalos de confianza del 99% para la media de <code>bp_rp</code>.
+      Los intervalos son más anchos que en el caso del 95%, pero la proporción de intervalos que
+      contienen \(\mu\_{\text{hat}}\) es aún mayor, aproximándose al 99% esperado.
+    </figcaption>
+  </figure>
+
+  <p>
+    En conjunto, estas simulaciones en Python ofrecen una ilustración dinámica de cómo los intervalos de confianza
+    se comportan al repetirse el muestreo: la cobertura empírica se aproxima al nivel nominal especificado, mientras
+    que el tamaño muestral controla de forma visible el ancho (y por tanto la precisión) de los intervalos.
+  </p>
+
+
+
+      </details>
+      <details>
+        <summary><strong>Rao–Blackwell</strong></summary>
+        
+  <h2>Rao–Blackwell: demostración empírica mediante simulación</h2>
+
+  <h3>1. Objetivo de la sección</h3>
+  <p>
+    El propósito de esta sección es ilustrar de forma empírica el Teorema de Rao–Blackwell aplicado a la estimación
+    de la media del índice de color <code>bp_rp</code> en la Zona A de la muestra (plano galáctico). Se compara:
+  </p>
+  <ul>
+    <li>Un <strong>estimador ingenuo</strong>, basado en un único dato aleatorio de la muestra (X<sub>1</sub>).</li>
+    <li>Un <strong>estimador mejorado por Rao–Blackwell</strong>, que en este contexto coincide con la <strong>media muestral</strong>.</li>
+  </ul>
+  <p>
+    La simulación permite cuantificar y visualizar cómo la Rao–Blackwellización mantiene el sesgo nulo pero reduce
+    de manera notable la varianza del estimador.
+  </p>
+
+  <h3>2. Marco teórico: Teorema de Rao–Blackwell</h3>
+  <p>
+    El Teorema de Rao–Blackwell proporciona un procedimiento general para mejorar un estimador insesgado. Sea:
+  </p>
+  <ul>
+    <li>&theta; un parámetro de interés (en nuestro caso, la media &mu; de <code>bp_rp</code>).</li>
+    <li>&#770;&theta; un estimador insesgado inicial (estimador &ldquo;ingenuo&rdquo;).</li>
+    <li>T un <strong>estadístico suficiente</strong> para &theta;.</li>
+  </ul>
+  <p>
+    El teorema establece que el estimador
+    <span style="white-space: nowrap;">&#771;&theta; = E(&#770;&theta; &mid; T)</span>
+    es también insesgado y tiene varianza <strong>menor o igual</strong> que la de &#770;&theta;.
+    A este proceso se le denomina <strong>Rao–Blackwellización</strong>.
+  </p>
+
+  <h3>3. Diseño de la simulación</h3>
+  <p>
+    Para mostrar el efecto de Rao–Blackwell sobre un estimador ingenuo, se construyó un experimento de simulación a
+    partir de los datos ya preparados y validados de las Zonas A y B (objeto <code>AB</code>).
+  </p>
+  <ul>
+    <li>
+      
+      <strong>Tamaños muestrales considerados:</strong>
+      <ul>
+        <li>n &in; {10, 50, 200}.</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Número de réplicas por tamaño muestral:</strong>
+      <ul>
+        <li>2000 réplicas independientes.</li>
+      </ul>
+    </li>
+  </ul>
+  <p>
+    En cada réplica se calculan dos estimadores para la misma &mu;:
+  </p>
+  <ul>
+    <li><strong>Estimador ingenuo</strong> (X<sub>1</sub>): el primer valor de la muestra aleatoria.</li>
+    <li><strong>Estimador Rao–Blackwell</strong>: la <strong>media muestral</strong> de los n datos seleccionados.</li>
+  </ul>
+
+
+  <h4>Visualización gráfica de los estimadores</h4>
+  <p>
+    Para facilitar la comparación, se reorganizan los datos en formato largo (una columna que indica el tipo de estimador
+    y otra su valor) y se construye un gráfico con <code>ggplot2</code> que incluye:
+  </p>
+  <ul>
+    <li><strong>Diagramas de violín</strong> y <strong>boxplots</strong> para cada estimador
+      (&ldquo;Ingenuo: X1&rdquo; y &ldquo;Rao–Blackwell: media&rdquo;).</li>
+    <li>Una <strong>línea horizontal punteada</strong> indicando la media empírica &#x3BC;&#770;.</li>
+    <li><strong>Facetas por tamaño muestral</strong> n &in; {10, 50, 200}, lo que permite observar cómo cambia la
+      dispersión al aumentar el tamaño de la muestra.</li>
+  </ul>
+
+  <!-- Reemplaza "ruta/a/figura_rao_blackwell.png" por la ruta real de tu imagen -->
+  <figure>
+    <img src="./gaia_assets/image3.png"
+         alt="Distribución de los estimadores ingenuo y Rao–Blackwell para distintos tamaños muestrales.">
+    <figcaption>
+      Figura. Comparación de la distribución del estimador ingenuo (X<sub>1</sub>) y del estimador Rao–Blackwell
+      (media muestral) para n = 10, 50 y 200. La línea punteada indica la media empírica &#x3BC;&#770;.
+    </figcaption>
+  </figure>
+
+  <h3>5. Resultados principales</h3>
+  <ul>
+    <li>
+      <strong>Estimador ingenuo (X<sub>1</sub>):</strong>
+      <ul>
+        <li>Es insesgado (E[X<sub>1</sub>] = &mu;), pero presenta una <strong>varianza alta</strong>.</li>
+        <li>En el gráfico, sus distribuciones aparecen muy anchas, mostrando gran dispersión alrededor de la media.</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Estimador Rao–Blackwell (media muestral):</strong>
+      <ul>
+        <li>También es insesgado.</li>
+        <li>Su varianza disminuye rápidamente al aumentar n</strong>.</li>
+        <li>En los gráficos, sus distribuciones son mucho más estrechas, indicando una ganancia importante en precisión.</li>
+      </ul>
+    </li>
+  </ul>
+  <p>
+    En conjunto, la diferencia entre ambos estimadores se vuelve <em>visualmente evidente</em>: el estimador basado en un
+    solo dato se dispersa enormemente, mientras que la versión Rao–Blackwellizada se concentra de forma notable alrededor
+    de la media de referencia.
+  </p>
+
+  <h3>6. Conclusión</h3>
+  <p>
+    Se muestra de forma clara el efecto del Teorema de Rao–Blackwell:
+  </p>
+  <ul>
+    <li>Ambos estimadores de &mu; son <strong>insesgados</strong>, por lo que, en promedio, aciertan.</li>
+    <li>El estimador basado en la <strong>media muestral</strong> presenta una varianza <strong>drásticamente menor</strong>,
+      y por tanto una <strong>mayor eficiencia</strong> que el estimador ingenuo X<sub>1</sub>.</li>
+    <li>Esta mejora se refleja tanto en la tabla de resultados (varianzas y eficiencia relativa) como en los gráficos
+      de violín y caja.</li>
+  </ul>
+  <p>
+    De este modo, la sección evidencia empíricamente que, cuando existe un estadístico suficiente adecuado (en este caso,
+    la media muestral bajo supuesta normalidad), la Rao–Blackwellización es efectiva para obtener
+    estimadores más precisos sin sacrificar insesgadez.
+  </p>
+
+
+      </details>
+    </section>
+
+
+    <section class="panel" id="panel_pruebas" role="tabpanel" aria-labelledby="tab_pruebas" aria-hidden="true">
+      <h2>Pruebas de hipótesis realizadas</h2>
+      <details open>
+        <summary><strong>Prueba 1 — Igualdad de medias del brillo fotométrico (g)</strong></summary>
+
+        <h3>1. Planteamiento y motivación</h3>
+  <p>
+    El objetivo de esta prueba es determinar si el brillo promedio de las estrellas
+    (<code>phot_g_mean_mag</code>) es estadísticamente igual entre la Zona A y la Zona B.
+    Esta comparación es fundamental para evaluar la homogeneidad fotométrica de la muestra y
+    para sustentar inferencias posteriores sobre otras variables.
+  </p>
+
+  <!-- FIGURA 1: Distribución del brillo por zona -->
+  <figure>
+    <img src="./gaia_assets/image5.png" alt="Distribución del brillo g por zonas (A y B)">
+    <figcaption><strong>Figura 1.</strong> Distribución comparativa del brillo fotométrico (g) entre la Zona A y la Zona B.</figcaption>
+  </figure>
+
+  <h3>2. Formulación estadística</h3>
+  <p>Las hipótesis evaluadas fueron:</p>
+  <p><strong>H₀:</strong> μ<sub>A</sub> = μ<sub>B</sub> &nbsp;&nbsp;&nbsp;
+     <strong>H₁:</strong> μ<sub>A</sub> ≠ μ<sub>B</sub></p>
+  <p>con un nivel de significancia α = 0.05.</p>
+
+  
+  <h3>3. Procedimiento</h3>
+  <h4>3.1 Selección de la muestra</h4>
+  <p>
+    Se tomaron 500 estrellas al azar por zona.
+  </p>
+
+
+  <h4>3.2 Prueba utilizada: t de Welch</h4>
+  <p>
+    Se empleó la prueba t de Welch porque no asume igualdad de varianzas y es robusta
+    para tamaños muestrales moderados. El análisis se ejecutó con:
+  </p>
+
+  <h4>3.3 Estadísticos extraídos</h4>
+  <p>De la prueba se obtuvieron: diferencia de medias, estadístico t, grados de libertad,
+     p-valor e intervalo de confianza del 95%.</p>
+
+  <!-- FIGURA 4: Tabla o salida de R -->
+  <figure>
+    <img src="./gaia_assets/image5.png" alt="Salida de la prueba t de Welch">
+    <figcaption><strong>Figura 4.</strong> Resultados detallados de la prueba t de Welch aplicada al brillo fotométrico.</figcaption>
+  </figure>
+
+  <h3>4. Resultados</h3>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Tamaño muestral por zona</td><td>500</td></tr>
+    <tr><td>Diferencia de medias (A − B)</td><td>0.0213</td></tr>
+    <tr><td>Estadístico t</td><td>0.190</td></tr>
+    <tr><td>gl</td><td>951</td></tr>
+    <tr><td>p-valor</td><td>0.849</td></tr>
+    <tr><td>IC95%</td><td>[−0.198 ; 0.241]</td></tr>
+  </table>
+
+  <!-- FIGURA 5: Visualización del intervalo de confianza -->
+  <figure>
+    <img src="./gaia_assets/image118.png" alt="Intervalo de confianza para la diferencia de medias">
+    <figcaption><strong>Figura 5.</strong> Intervalo de confianza al 95% para la diferencia de medias entre zonas.</figcaption>
+  </figure>
+
+  <h3>5. Interpretación</h3>
+  <p>
+    El p-valor (0.849) es muy superior a 0.05, por lo que no se rechaza la hipótesis nula.
+    El intervalo de confianza incluye el 0, indicando que la diferencia de 0.02 mag puede
+    atribuirse al azar. En términos fotométricos, esta diferencia es insignificante.
+  </p>
+
+  <h3>6. Conclusión</h3>
+  <p>
+    Los resultados muestran que el brillo medio es estadísticamente indistinguible entre
+    las Zonas A y B. Esto sugiere que no existen diferencias sistemáticas en magnitud G
+    entre regiones y respalda la homogeneidad fotométrica de la población analizada.
+  </p>
+
+        
+      </details>
+      <details>
+        <summary><strong>Prueba 2 — Igualdad de varianzas del brillo fotométrico (g)</strong></summary>
+        
+        <h2>Prueba de Hipótesis 2 — Igualdad de varianzas del brillo fotométrico (g)</h2>
+
+  <h3>1. Planteamiento y motivación</h3>
+  <p>
+    En esta prueba se analiza si la <strong>variabilidad</strong> del brillo fotométrico
+    (<code>phot_g_mean_mag</code>) es comparable entre la Zona A y la Zona B. A diferencia de la
+    Prueba 1, que se centró en las medias, aquí el interés recae en la <strong>dispersión</strong>
+    de los datos, ya que esta está asociada a la heterogeneidad de tipos estelares, distancias y
+    condiciones físicas en cada región.
+  </p>
+  <p>
+    La pregunta inferencial es:
+  </p>
+  <p style="margin-left:1.5rem;">
+    <em>¿Podemos considerar iguales las varianzas del brillo en ambas zonas, o los datos sugieren
+    que una región es más dispersa que la otra?</em>
+  </p>
+
+  <h3>2. Formulación estadística</h3>
+  <p>Se planteó el contraste clásico de igualdad de varianzas mediante la prueba F de Fisher:</p>
+  <p>
+    <strong>H₀:</strong> σ<sub>A</sub><sup>2</sup> = σ<sub>B</sub><sup>2</sup><br>
+    <strong>H₁:</strong> σ<sub>A</sub><sup>2</sup> ≠ σ<sub>B</sub><sup>2</sup>
+  </p>
+  <p>
+    donde σ<sub>A</sub><sup>2</sup> y σ<sub>B</sub><sup>2</sup> representan las varianzas
+    poblacionales del brillo en la Zona A y la Zona B, respectivamente. Se utilizó un nivel de
+    significancia <strong>α = 0.05</strong>.
+  </p>
+
+  <h3>3. Metodología</h3>
+  <h4>3.1 Selección de la muestra</h4>
+  <p>
+    Se extrajeron submuestras de <strong>100 estrellas por zona</strong>, seleccionadas de forma
+    aleatoria sin reemplazo. Este esquema mantiene tamaños muestrales equilibrados y permite
+    comparar la dispersión de manera simétrica entre A y B.
+  </p>
+
+  <h4>3.2 Construcción de la estadística F</h4>
+  <p>
+    A partir de las submuestras se calcularon las varianzas muestrales del brillo en cada zona y se
+    construyó la razón:
+  </p>
+  <p style="margin-left:1.5rem;">
+    F = Var(A) / Var(B)
+  </p>
+  <p>
+    Bajo la hipótesis nula de igualdad de varianzas se espera que esta razón sea cercana a 1. La
+    estadística F así definida se contrasta con una distribución F de Fisher con:
+  </p>
+  <ul>
+    <li>gl₁ = 99 (Zona A)</li>
+    <li>gl₂ = 99 (Zona B)</li>
+  </ul>
+  <p>
+    A partir de esta distribución se obtuvo el <strong>p-valor</strong> y el
+    <strong>intervalo de confianza del 95 %</strong> para la razón Var(A)/Var(B).
+  </p>
+
+  <!-- FIGURA 1 – Resultados del test (screenshot/tabla de R) -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image120.png"
+         alt="Resultados de la prueba F de Fisher para la igualdad de varianzas">
+    <figcaption>
+      <strong>Figura 1.</strong> Salida resumida de la prueba F de Fisher aplicada al brillo fotométrico
+      (g), mostrando la razón de varianzas, estadístico F, grados de libertad y p-valor.
+    </figcaption>
+  </figure>
+
+  <h3>4. Resultados</h3>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Tamaño muestral por zona</td><td>100</td></tr>
+    <tr><td>Razón Var(A)/Var(B)</td><td>0.681</td></tr>
+    <tr><td>Estadístico F</td><td>0.681</td></tr>
+    <tr><td>gl₁</td><td>99</td></tr>
+    <tr><td>gl₂</td><td>99</td></tr>
+    <tr><td>p-valor</td><td>0.0572</td></tr>
+    <tr><td>IC95 % para Var(A)/Var(B)</td><td>[0.458 ; 1.01]</td></tr>
+  </table>
+
+  <!-- FIGURA 2 – Gráfica del intervalo de confianza -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image121.png"
+         alt="Gráfica del intervalo de confianza del 95% para la razón de varianzas">
+    <figcaption>
+      <strong>Figura 2.</strong> Visualización del intervalo de confianza del 95 % para la razón Var(A)/Var(B),
+      con el punto de estimación en 0.681 y la banda [0.458 ; 1.01]. La línea vertical en 1 representa el caso
+      de varianzas iguales.
+    </figcaption>
+  </figure>
+
+  <h3>5. Interpretación estadística</h3>
+  <p>
+    La razón muestral Var(A)/Var(B) = <strong>0.681</strong> sugiere que, en esta submuestra,
+    la varianza del brillo en la Zona B es mayor que en la Zona A (es decir, B sería más dispersa).
+    Sin embargo, el <strong>p-valor = 0.0572</strong> es ligeramente superior al umbral de 0.05,
+    por lo que, siguiendo el criterio estándar de α = 0.05, <strong>no se rechaza la hipótesis nula</strong>
+    de igualdad de varianzas.
+  </p>
+  <p>
+    El intervalo de confianza del 95 % para Var(A)/Var(B) es <strong>[0.458 ; 1.01]</strong>.
+    Este intervalo incluye el valor 1, lo que implica que, con el nivel de confianza considerado,
+    no puede descartarse que las varianzas poblacionales sean exactamente iguales. Dicho de otro modo:
+    aunque la estimación puntual indica una diferencia (0.681 &lt; 1), la incertidumbre asociada a la muestra
+    es lo suficientemente grande como para que el valor 1 siga siendo plausible.
+  </p>
+  <p>
+    Este resultado se puede interpretar como una <strong>evidencia débil o limítrofe</strong> de diferencia
+    de varianzas: los datos apuntan a que la dispersión podría ser mayor en la Zona B, pero la prueba, con
+    n = 100 por zona y α = 0.05, <strong>no ofrece soporte estadístico suficiente</strong> para afirmarlo
+    categóricamente.
+  </p>
+
+  <h3>6. Discusión y consideraciones</h3>
+  <p>
+    El hecho de que la razón de varianzas sea menor que 1 y que el p-valor quede muy próximo a 0.05 sugiere que
+    podría existir una diferencia real en la dispersión del brillo entre zonas, pero con la submuestra utilizada
+    la señal estadística no es lo bastante fuerte. Entre las posibles razones se incluyen:
+  </p>
+  <ul>
+    <li>
+      <strong>Tamaño muestral limitado:</strong> aunque 100 observaciones por zona es un tamaño razonable,
+      puede no ser suficiente para detectar diferencias moderadas de varianza con alta potencia.
+    </li>
+    <li>
+      <strong>Diferencia de varianzas moderada:</strong> la razón 0.681 indica una diferencia, pero no extremadamente
+      marcada; esto hace que el test F sea sensible a la variabilidad muestral.
+    </li>
+    <li>
+      <strong>Dependencia de la submuestra concreta:</strong> al trabajar con muestras aleatorias,
+      distintas extracciones pueden producir resultados ligeramente diferentes alrededor del umbral de significancia.
+    </li>
+  </ul>
+
+  <h3>7. Conclusión</h3>
+  <p>
+    En resumen, los datos de esta submuestra apuntan a una posible mayor dispersión del brillo fotométrico en la
+    Zona B (Var(A)/Var(B) = 0.681), pero la prueba F de Fisher, con p = 0.0572 e intervalo de confianza del 95 %
+    que incluye el valor 1, <strong>no permite rechazar la hipótesis de igualdad de varianzas</strong> al nivel
+    α = 0.05. Desde el punto de vista inferencial, la evidencia de diferencia de varianzas es débil y debe
+    interpretarse con cautela, señalando que se requeriría una muestra mayor o criterios de significancia más
+    flexibles (por ejemplo, α = 0.10) para sostener con mayor firmeza la existencia de una dispersión diferente
+    entre ambas zonas.
+  </p>
+
+      </details>
+      <details>
+        <summary><strong>Prueba 3 — Color (BP–RP): igualdad de medias (t de Welch)</strong></summary>
+        
+  <h2>Prueba de Hipótesis 3 — Color (BP–RP): igualdad de medias (t de Welch)</h2>
+
+  <h3>1. Planteamiento y motivación</h3>
+  <p>
+    En esta prueba se analiza si el <strong>color medio</strong> de las estrellas, medido mediante el índice
+    <code>BP–RP</code>, es el mismo en la Zona A (plano galáctico) y en la Zona B (polos galácticos).
+    El color es un indicador de la temperatura efectiva y está fuertemente influido por la
+    <strong>extinción interestelar</strong>, por lo que comparar sus medias entre zonas permite detectar
+    diferencias físicas relevantes en el entorno galáctico.
+  </p>
+  <p>
+    La pregunta inferencial principal es:
+  </p>
+  <p style="margin-left:1.5rem;">
+    <em>¿Las estrellas de la Zona A y la Zona B presentan el mismo color medio (BP–RP), o una de las regiones
+    es sistemáticamente más roja que la otra?</em>
+  </p>
+
+  <h3>2. Formulación estadística</h3>
+  <p>
+    Para contrastar la igualdad de medias de color se utilizó una prueba <strong>t de Welch</strong>,
+    adecuada para comparar medias de dos grupos independientes sin asumir igualdad estricta de varianzas.
+    Se plantearon las siguientes hipótesis:
+  </p>
+  <p>
+    <strong>H₀:</strong> μ<sub>A</sub> = μ<sub>B</sub><br>
+    <strong>H₁:</strong> μ<sub>A</sub> ≠ μ<sub>B</sub>
+  </p>
+  <p>
+    donde μ<sub>A</sub> y μ<sub>B</sub> representan el color medio (BP–RP) en la Zona A y la Zona B,
+    respectivamente. Se trabajó con un nivel de significancia <strong>α = 0.05</strong>.
+  </p>
+
+  <h3>3. Metodología</h3>
+  <h4>3.1 Selección de la muestra</h4>
+  <p>
+    Se extrajeron aleatoriamente submuestras de <strong>30 estrellas por zona</strong>, considerando únicamente
+    observaciones con valores válidos del índice BP–RP. Este tamaño muestral, aunque moderado, es suficiente
+    para detectar diferencias de color esperadas entre el plano y los polos cuando estas son de magnitud apreciable.
+  </p>
+
+  <h4>3.2 Esquema de comparación</h4>
+  <p>
+    Para cada zona se calcularon la media y la desviación estándar del color BP–RP. La diferencia de interés se definió como:
+  </p>
+  <p style="margin-left:1.5rem;">
+    Δ = μ<sub>A</sub> − μ<sub>B</sub>
+  </p>
+  <p>
+    A partir de esta diferencia y de las dispersiones observadas en cada grupo se construyó el estadístico t de Welch
+    y se estimaron el <strong>p-valor bilateral</strong> y el <strong>intervalo de confianza del 95 %</strong>
+    para Δ.
+  </p>
+
+  <!-- FIGURA 1 – Resultados numéricos de la prueba -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image122.png"
+         alt="Resultados de la prueba t de Welch para el color BP–RP">
+    <figcaption>
+      <strong>Figura 1.</strong> Resumen numérico de la prueba t de Welch aplicada al índice de color BP–RP:
+      diferencia de medias estimada, estadístico t, grados de libertad y p-valor.
+    </figcaption>
+  </figure>
+
+  <h3>4. Resultados</h3>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Tamaño muestral por zona</td><td>30</td></tr>
+    <tr><td>Diferencia de medias (A − B)</td><td>0.359</td></tr>
+    <tr><td>Estadístico t</td><td>2.29</td></tr>
+    <tr><td>Grados de libertad (Welch)</td><td>≈ 54.7</td></tr>
+    <tr><td>p-valor</td><td>0.0256</td></tr>
+    <tr><td>IC95 % para (μ<sub>A</sub> − μ<sub>B</sub>)</td><td>[0.0454 ; 0.673]</td></tr>
+  </table>
+
+  <!-- FIGURA 2 – Gráfica del intervalo de confianza -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image123.png"
+         alt="Gráfica del intervalo de confianza del 95% para la diferencia de medias de color BP–RP">
+    <figcaption>
+      <strong>Figura 2.</strong> Visualización del intervalo de confianza del 95 % para la diferencia de medias
+      (μ<sub>A</sub> − μ<sub>B</sub>) en el color BP–RP. El punto central representa la diferencia estimada
+      (0.359) y la barra indica el intervalo [0.0454 ; 0.673]. La línea vertical en 0 marca el caso de igualdad
+      de medias.
+    </figcaption>
+  </figure>
+
+  <h3>5. Interpretación estadística</h3>
+  <p>
+    El <strong>p-valor = 0.0256</strong> es claramente inferior al nivel de significancia α = 0.05, por lo que se
+    <strong>rechaza la hipótesis nula</strong> de igualdad de medias de color. Es decir, los datos proporcionan
+    evidencia estadística suficiente para concluir que el color medio (BP–RP) difiere entre la Zona A y la Zona B.
+  </p>
+  <p>
+    El intervalo de confianza del 95 % para la diferencia μ<sub>A</sub> − μ<sub>B</sub> es
+    <strong>[0.0454 ; 0.673]</strong>, y <strong>no incluye el valor 0</strong>. Esto refuerza la conclusión anterior:
+    la diferencia observada no puede atribuirse únicamente al azar muestral. Además, el hecho de que todo el intervalo
+    se sitúe por encima de 0 indica que, con el nivel de confianza considerado, la Zona A presenta sistemáticamente
+    un color más rojo que la Zona B.
+  </p>
+  <p>
+    La estimación puntual Δ = 0.359 sugiere que, en promedio, las estrellas del plano galáctico tienen un índice BP–RP
+    sensiblemente mayor que las de los polos, lo que corresponde a una diferencia apreciable en términos de enrojecimiento.
+  </p>
+
+  <h3>6. Interpretación física</h3>
+  <p>
+    El hecho de que las estrellas de la Zona A (plano galáctico) presenten un color medio más rojo es coherente con la
+    presencia de <strong>mayor cantidad de polvo y gas interestelar</strong> en el plano de la galaxia. Estos componentes
+    absorben y dispersan más eficientemente la luz azul que la roja, produciendo un enrojecimiento aparente de las fuentes,
+    fenómeno conocido como <em>extinción interestelar</em>.
+  </p>
+  <p>
+    La diferencia estadísticamente significativa en el índice BP–RP entre ambas zonas se interpreta, por tanto, como evidencia
+    observacional del efecto del medio interestelar sobre la radiación estelar, en línea con lo esperado por la estructura
+    de la Vía Láctea: un plano más denso y enrojecido frente a polos más transparentes.
+  </p>
+
+  <h3>7. Conclusión</h3>
+  <p>
+    La prueba t de Welch aplicada al color BP–RP, con submuestras de 30 estrellas por zona, arroja una diferencia de medias
+    estimada de 0.359 magnitudes (IC95 % [0.0454 ; 0.673]), con t ≈ 2.29, gl ≈ 54.7 y p = 0.0256. Estos resultados permiten
+    <strong>rechazar la hipótesis de igualdad de medias</strong> y concluyen que las estrellas del plano galáctico (Zona A)
+    presentan colores significativamente más rojos que las de los polos (Zona B), en coherencia con el efecto de extinción
+    producido por el polvo interestelar en el plano de la Vía Láctea.
+  </p>
+
+
+
+      </details>
+      <details>
+        <summary><strong>Prueba 4 — Color (BP–RP): igualdad de varianzas (F de Fisher)</strong></summary>
+       
+        <h2>Prueba 4 — Color (BP–RP): igualdad de varianzas (F de Fisher)</h2>
+
+  <h3>1. Planteamiento y motivación</h3>
+  <p>
+    En esta prueba se evalúa si la <strong>dispersión</strong> del color estelar, medido mediante el índice
+    <code>BP–RP</code>, es comparable entre la Zona A (plano galáctico) y la Zona B (polos galácticos).
+    A diferencia de la Prueba 3, centrada en la igualdad de medias, aquí el foco está en la
+    <strong>varianza del color</strong>, es decir, en cuán diversa es la distribución de BP–RP dentro de
+    cada región. Determinar si las varianzas son iguales ayuda a entender si ambas zonas presentan una
+    heterogeneidad interna similar en cuanto a tipos estelares y efectos de enrojecimiento.
+  </p>
+
+  <h3>2. Formulación estadística</h3>
+  <p>
+    Se planteó una prueba F de Fisher de igualdad de varianzas con las siguientes hipótesis:
+  </p>
+  <p>
+    <strong>H₀:</strong> σ<sub>A</sub><sup>2</sup> = σ<sub>B</sub><sup>2</sup><br>
+    <strong>H₁:</strong> σ<sub>A</sub><sup>2</sup> ≠ σ<sub>B</sub><sup>2</sup>
+  </p>
+  <p>
+    donde σ<sub>A</sub><sup>2</sup> y σ<sub>B</sub><sup>2</sup> representan las varianzas poblacionales
+    del color BP–RP en la Zona A y la Zona B, respectivamente. Se utilizó un nivel de significancia
+    <strong>α = 0.05</strong>.
+  </p>
+
+  <h3>3. Metodología</h3>
+  <h4>3.1 Selección de la muestra</h4>
+  <p>
+    Se tomaron submuestras aleatorias de <strong>200 estrellas por zona</strong>, considerando únicamente
+    observaciones con valores válidos de BP–RP. Este tamaño muestral es suficiente para estimar con buena
+    estabilidad las varianzas y construir un contraste F con alta precisión.
+  </p>
+
+  <h4>3.2 Construcción de la estadística F</h4>
+  <p>
+    A partir de las submuestras se calcularon las varianzas muestrales del color en cada zona y se definió
+    la razón:
+  </p>
+  <p style="margin-left:1.5rem;">
+    F = Var(A) / Var(B)
+  </p>
+  <p>
+    Bajo la hipótesis nula de igualdad de varianzas se espera que esta razón sea cercana a 1. La estadística
+    F así obtenida se comparó con la distribución F de Fisher con:
+  </p>
+  <ul>
+    <li>gl₁ = 199 (Zona A)</li>
+    <li>gl₂ = 199 (Zona B)</li>
+  </ul>
+  <p>
+    Con esta distribución se calculó el <strong>p-valor</strong> y el
+    <strong>intervalo de confianza del 95 %</strong> para la razón Var(A)/Var(B).
+  </p>
+
+  <!-- FIGURA 1 – Resultados del test F -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image127.png"
+         alt="Resultados de la prueba F de Fisher para la igualdad de varianzas del color BP–RP">
+    <figcaption>
+      <strong>Figura 1.</strong> Resumen numérico de la prueba F de Fisher aplicada al índice de color BP–RP:
+      razón de varianzas, estadístico F, grados de libertad y p-valor.
+    </figcaption>
+  </figure>
+
+  <h3>4. Resultados</h3>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Tamaño muestral por zona</td><td>200</td></tr>
+    <tr><td>Razón Var(A)/Var(B)</td><td>1.07</td></tr>
+    <tr><td>Estadístico F</td><td>1.07</td></tr>
+    <tr><td>gl₁</td><td>199</td></tr>
+    <tr><td>gl₂</td><td>199</td></tr>
+    <tr><td>p-valor</td><td>0.628</td></tr>
+    <tr><td>IC95 % para Var(A)/Var(B)</td><td>[0.811 ; 1.42]</td></tr>
+  </table>
+
+  <!-- FIGURA 2 – Gráfica del intervalo de confianza -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image126.png"
+         alt="Gráfica del intervalo de confianza del 95% para la razón de varianzas del color BP–RP">
+    <figcaption>
+      <strong>Figura 2.</strong> Visualización del intervalo de confianza del 95 % para la razón Var(A)/Var(B).
+      El punto central representa la estimación puntual (1.07) y la barra el intervalo [0.811 ; 1.42]. La línea
+      vertical en 1 indica el caso de varianzas iguales.
+    </figcaption>
+  </figure>
+
+  <h3>5. Interpretación estadística</h3>
+  <p>
+    El <strong>p-valor = 0.628</strong> es muy superior al nivel de significancia α = 0.05, por lo que
+    <strong>no se rechaza la hipótesis nula</strong> de igualdad de varianzas. Además, el intervalo de
+    confianza del 95 % para la razón Var(A)/Var(B) es <strong>[0.811 ; 1.42]</strong>, y
+    <strong>contiene el valor 1</strong>. Esto indica que, con el nivel de confianza considerado, los
+    datos son compatibles con la existencia de varianzas poblacionales iguales en ambas zonas.
+  </p>
+  <p>
+    Aunque la estimación puntual de la razón de varianzas (1.07) sugiere una ligera mayor dispersión en
+    la Zona A, dicha diferencia es pequeña y no resulta estadísticamente significativa con esta
+    submuestra de 200 estrellas por zona.
+  </p>
+
+  <h3>6. Interpretación física</h3>
+  <p>
+    Desde el punto de vista físico, los resultados indican que la <strong>variabilidad interna del color</strong>
+    dentro de cada zona es muy similar. Esto significa que, aunque la media de BP–RP difiera claramente
+    entre el plano galáctico y los polos (la Zona A es más roja, como mostró la Prueba 3), la
+    <strong>diversidad de tipos estelares y de condiciones locales</strong> en cada región es comparable.
+    En otras palabras, ambas zonas presentan poblaciones con una amplitud de colores semejante, desplazadas
+    en conjunto por distintos niveles de enrojecimiento y extinción interestelar.
+  </p>
+
+  <h3>7. Conclusión</h3>
+  <p>
+    La prueba F de Fisher aplicada al índice de color BP–RP, con submuestras de 200 estrellas por zona,
+    arroja una razón Var(A)/Var(B) = 1.07 (IC95 % [0.811 ; 1.42]), F = 1.07, gl₁ = 199, gl₂ = 199 y
+    p = 0.628. Estos resultados <strong>no permiten rechazar la hipótesis de igualdad de varianzas</strong>,
+    por lo que se concluye que la dispersión del color es estadísticamente indistinguible entre la Zona A
+    y la Zona B. La diferencia principal entre ambas regiones radica, por tanto, en el desplazamiento del
+    color medio y no en la amplitud de la distribución de BP–RP.
+  </p>
+
+
+      </details>
+      <details>
+        <summary><strong>Prueba 5 — parallax_over_error: igualdad de medias (t de Welch)</strong></summary>
+        
+
+        <h2>Prueba 5 — parallax_over_error: igualdad de medias (t de Welch)</h2>
+
+  <h3>1. Planteamiento y motivación</h3>
+  <p>
+    En esta prueba se analiza si la <strong>precisión relativa de la paralaje</strong>, medida mediante la variable
+    <code>parallax_over_error</code> (relación señal/ruido de la medición), es la misma en la Zona A
+    (plano galáctico) y en la Zona B (polos galácticos).
+  </p>
+  <p>
+    Esta variable es clave porque valores más altos indican <strong>paralajes mejor determinadas</strong>, mientras que
+    valores más bajos reflejan mediciones ruidosas. Comparar sus medias entre zonas permite cuantificar hasta qué punto
+    las condiciones observacionales (densidad estelar, polvo, superposición de fuentes, etc.) afectan la calidad de los
+    datos astrométricos.
+  </p>
+  <p style="margin-left:1.5rem;">
+    <em>¿Las mediciones de paralaje son, en promedio, igual de precisas en el plano galáctico que en los polos,
+    o existe una diferencia sistemática en la relación parallax_over_error?</em>
+  </p>
+
+  <h3>2. Formulación estadística</h3>
+  <p>
+    Para contrastar la igualdad de medias se utilizó una prueba <strong>t de Welch</strong>, apropiada cuando no se
+    puede asumir igualdad de varianzas entre grupos. Las hipótesis planteadas fueron:
+  </p>
+  <p>
+    <strong>H₀:</strong> μ<sub>A</sub> = μ<sub>B</sub><br>
+    <strong>H₁:</strong> μ<sub>A</sub> ≠ μ<sub>B</sub>
+  </p>
+  <p>
+    donde μ<sub>A</sub> y μ<sub>B</sub> representan la media de <code>parallax_over_error</code> en la Zona A y la Zona B,
+    respectivamente. Se trabajó con un nivel de significancia <strong>α = 0.05</strong>.
+  </p>
+
+  <h3>3. Metodología</h3>
+  <h4>3.1 Selección de la muestra</h4>
+  <p>
+    Se extrajeron aleatoriamente submuestras de <strong>200 estrellas por zona</strong>, utilizando únicamente registros
+    con valores válidos de <code>parallax_over_error</code>. Este tamaño muestral relativamente grande es necesario
+    porque la variable presenta una <strong>alta dispersión</strong>, y se requiere una cantidad suficiente de datos
+    para detectar diferencias claras en las medias.
+  </p>
+
+  <h4>3.2 Esquema de comparación</h4>
+  <p>
+    Para cada zona se calcularon la media y la desviación estándar de <code>parallax_over_error</code>. La diferencia de interés se definió como:
+  </p>
+  <p style="margin-left:1.5rem;">
+    Δ = μ<sub>A</sub> − μ<sub>B</sub>
+  </p>
+  <p>
+    A partir de esta diferencia y de las dispersiones observadas en ambos grupos se construyó el estadístico t de Welch,
+    obteniendo el <strong>p-valor bilateral</strong> y el <strong>intervalo de confianza del 95 %</strong> para Δ.
+  </p>
+
+  <!-- FIGURA 1 – Resultados numéricos de la prueba -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image128.png"
+         alt="Resultados de la prueba t de Welch para parallax_over_error">
+    <figcaption>
+      <strong>Figura 1.</strong> Resumen numérico de la prueba t de Welch aplicada a
+      <code>parallax_over_error</code>: diferencia de medias estimada, estadístico t, grados de libertad y p-valor.
+    </figcaption>
+  </figure>
+
+  <h3>4. Resultados</h3>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Tamaño muestral por zona</td><td>200</td></tr>
+    <tr><td>Diferencia de medias (A − B)</td><td>−11.3</td></tr>
+    <tr><td>Estadístico t</td><td>−4.44</td></tr>
+    <tr><td>Grados de libertad (Welch)</td><td>≈ 203</td></tr>
+    <tr><td>p-valor</td><td>0.0000150</td></tr>
+    <tr><td>IC95 % para (μ<sub>A</sub> − μ<sub>B</sub>)</td><td>[−16.3 ; −6.27]</td></tr>
+  </table>
+
+  <!-- FIGURA 2 – Gráfica del intervalo de confianza -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image129.png"
+         alt="Gráfica del intervalo de confianza del 95% para la diferencia de medias de parallax_over_error">
+    <figcaption>
+      <strong>Figura 2.</strong> Intervalo de confianza del 95 % para la diferencia de medias
+      (μ<sub>A</sub> − μ<sub>B</sub>) de <code>parallax_over_error</code>. El punto central representa la
+      diferencia estimada (−11.3) y la barra el intervalo [−16.3 ; −6.27]. La línea vertical en 0 corresponde
+      al caso de igualdad de medias.
+    </figcaption>
+  </figure>
+
+  <h3>5. Interpretación estadística</h3>
+  <p>
+    El <strong>p-valor = 0.000015</strong> es extremadamente menor que el nivel de significancia α = 0.05,
+    por lo que se <strong>rechaza con claridad la hipótesis nula</strong> de igualdad de medias. Es decir,
+    existe evidencia estadística muy fuerte de que la media de <code>parallax_over_error</code> difiere entre
+    la Zona A y la Zona B.
+  </p>
+  <p>
+    El intervalo de confianza del 95 % para la diferencia μ<sub>A</sub> − μ<sub>B</sub> es
+    <strong>[−16.3 ; −6.27]</strong>, y se sitúa por completo en valores negativos; no incluye el 0.
+    Esto indica que, con el nivel de confianza considerado, la media de <code>parallax_over_error</code> en la
+    Zona A es <strong>significativamente menor</strong> que en la Zona B.
+  </p>
+  <p>
+    La estimación puntual Δ = −11.3 implica que, en promedio, las mediciones de paralaje en la Zona A tienen
+    una relación señal/ruido sustancialmente más baja que en la Zona B, reflejando una diferencia grande en
+    la calidad de las observaciones.
+  </p>
+
+  <h3>6. Interpretación física</h3>
+  <p>
+    La variable <code>parallax_over_error</code> resume cuán precisa es la medición de la paralaje: valores altos
+    corresponden a distancias bien determinadas, mientras que valores bajos indican mediciones dominadas por el ruido.
+  </p>
+  <p>
+    El hecho de que la Zona A (plano galáctico) presente una media significativamente menor que la Zona B es coherente
+    con lo que se espera de las condiciones observacionales:
+  </p>
+  <ul>
+    <li><strong>Mayor densidad estelar</strong> en el plano, que provoca superposición de fuentes y complicaciones
+        en la reducción astrométrica.</li>
+    <li><strong>Presencia de polvo y gas interestelar</strong>, que atenúa el flujo y reduce la señal efectiva de
+        las estrellas observadas.</li>
+    <li><strong>Mayor contaminación de fondo</strong>, tanto estelar como difusa, que aumenta el ruido asociado a la medida.</li>
+  </ul>
+  <p>
+    En contraste, los polos galácticos ofrecen líneas de visión más limpias, con menor densidad de fuentes y menos
+    efectos de extinción, lo que se traduce en valores mayores de <code>parallax_over_error</code> y, por tanto,
+    en paralajes más confiables.
+  </p>
+
+  <h3>7. Conclusión</h3>
+  <p>
+    La prueba t de Welch aplicada a <code>parallax_over_error</code>, con submuestras de 200 estrellas por zona,
+    arroja una diferencia de medias estimada de −11.3 (IC95 % [−16.3 ; −6.27]), con t ≈ −4.44, gl ≈ 203
+    y p ≈ 1.5 × 10⁻⁵. Estos resultados permiten <strong>rechazar de forma contundente la hipótesis de igualdad
+    de medias</strong> y concluyen que las mediciones de paralaje en el plano galáctico (Zona A) son, en promedio,
+    significativamente menos precisas que en los polos galácticos (Zona B), en coherencia con las diferencias
+    en condiciones observacionales entre ambas regiones.
+  </p>
+
+
+
+      </details>
+      <details>
+        <summary><strong>Prueba 6 — Ejemplo educativo de prueba mal planteada (Error Tipo I)</strong></summary>
+        
+<h2>Prueba 6 — Ejemplo educativo de prueba mal planteada (Error Tipo I)</h2>
+
+  <h3>1. Objetivo pedagógico de la prueba</h3>
+  <p>
+    Esta prueba no se diseña para extraer una conclusión científica sobre los datos, sino como
+    <strong>ejemplo pedagógico de una prueba de hipótesis mal planteada</strong> que conduce a un
+    posible <strong>Error Tipo I</strong> (falso positivo). Se trabaja nuevamente con la variable
+    de brillo <code>phot_g_mean_mag</code>, comparando la Zona A y la Zona B.
+  </p>
+  <p>
+    Con base en los análisis previos del proyecto, se sabe que las medias de brillo entre zonas son
+    muy similares y que no existen diferencias claras a nivel poblacional. Sin embargo, en esta
+    sección se construye deliberadamente una situación en la que la prueba estadística “detecta”
+    una diferencia significativa únicamente por:
+  </p>
+  <ul>
+    <li>un <strong>tamaño muestral extremadamente pequeño</strong> (n = 5 por zona);</li>
+    <li>el uso inapropiado de una <strong>t de Student con varianzas iguales</strong>; y</li>
+    <li>la ignorancia de toda la evidencia previa que sugería medias prácticamente iguales.</li>
+  </ul>
+  <p>
+    El objetivo es mostrar que un p-valor &lt; 0.05 no siempre implica un resultado sólido: también
+    puede ser consecuencia de una prueba mal especificada y de muestras pequeñas poco representativas.
+  </p>
+
+  <h3>2. Formulación estadística declarada</h3>
+  <p>
+    Formalmente, la prueba se plantea como una comparación de medias entre dos zonas mediante
+    una <strong>t de Student clásica</strong> asumiendo varianzas iguales:
+  </p>
+  <p>
+    <strong>H₀:</strong> μ<sub>A</sub> = μ<sub>B</sub><br>
+    <strong>H₁:</strong> μ<sub>A</sub> ≠ μ<sub>B</sub>
+  </p>
+  <p>
+    con un nivel de significancia <strong>α = 0.05</strong>. Sin embargo, esta formulación es
+    problemática porque:
+  </p>
+  <ul>
+    <li>se usa una <strong>muestra minúscula</strong> (n = 5 por grupo), lo que hace muy inestable
+        la estimación de medias y varianzas;</li>
+    <li>se impone la condición de <strong>varianzas iguales</strong> sin justificarla, a pesar de
+        que análisis previos mostraron diferencias de dispersión entre zonas;</li>
+    <li>se ignora la información previa que sugería <strong>igualdad de medias</strong> a nivel global.</li>
+  </ul>
+
+  <h3>3. Metodología y diseño mal planteado</h3>
+  <h4>3.1 Muestra diminuta</h4>
+  <p>
+    Para esta prueba se toman únicamente <strong>5 estrellas por zona</strong>. Este tamaño muestral
+    es demasiado pequeño para representar adecuadamente las distribuciones reales de brillo en cada
+    región, lo que hace que los resultados dependan en gran medida de la selección concreta de la
+    submuestra.
+  </p>
+
+  <h4>3.2 Supuesto erróneo sobre las varianzas</h4>
+  <p>
+    En lugar de utilizar una prueba t robusta (como la t de Welch), se impone una
+    <strong>t de Student con varianzas iguales</strong>. Este supuesto no está respaldado por el
+    análisis exploratorio previo y altera tanto el cálculo del error estándar como los grados de
+    libertad, favoreciendo la obtención de un p-valor artificialmente pequeño.
+  </p>
+
+  <h4>3.3 Ignorar la evidencia previa</h4>
+  <p>
+    En análisis anteriores de la misma variable con tamaños muestrales grandes se había observado
+    que las medias de brillo entre Zonas A y B eran prácticamente iguales. Es decir, existía una
+    fuerte evidencia a favor de H₀. Esta prueba educativa ignora deliberadamente dicha evidencia,
+    lo que ilustra cómo se puede llegar a conclusiones contradictorias cuando se seleccionan
+    submuestras pequeñas y se formulan pruebas sin rigor.
+  </p>
+
+  <!-- FIGURA 1 – Resultados numéricos de la prueba mal planteada -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image131.png"
+         alt="Resultados de la prueba t de Student mal planteada para el brillo phot_g_mean_mag">
+    <figcaption>
+      <strong>Figura 1.</strong> Resultados de la prueba t de Student mal planteada para el brillo
+      <code>phot_g_mean_mag</code>: con solo 5 observaciones por zona, la diferencia muestral de
+      1.94 magnitudes produce un estadístico t = 2.36, gl = 8 y un p-valor ≈ 0.0463.
+    </figcaption>
+  </figure>
+
+  <h3>4. Resultados numéricos</h3>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Tamaño muestral por zona</td><td>5</td></tr>
+    <tr><td>Diferencia de medias (A − B)</td><td>1.94</td></tr>
+    <tr><td>Estadístico t</td><td>2.36</td></tr>
+    <tr><td>Grados de libertad</td><td>8</td></tr>
+    <tr><td>p-valor</td><td>0.0463</td></tr>
+    <tr><td>IC95 % para (μ<sub>A</sub> − μ<sub>B</sub>)</td><td>[0.0405 ; 3.83]</td></tr>
+  </table>
+
+  <!-- FIGURA 2 – Gráfica del intervalo de confianza de la prueba mal planteada -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image130.png"
+         alt="Intervalo de confianza del 95% para la diferencia de medias en la prueba mal planteada">
+    <figcaption>
+      <strong>Figura 2.</strong> Intervalo de confianza del 95 % para la diferencia de medias en la
+      prueba mal planteada. El intervalo [0.0405 ; 3.83] es muy ancho debido al tamaño muestral
+      reducido, pero al no incluir el 0 lleva a rechazar H₀, a pesar de que la evidencia global del
+      estudio sugiere medias de brillo prácticamente iguales entre zonas.
+    </figcaption>
+  </figure>
+
+  <h3>5. Interpretación estadística</h3>
+  <p>
+    El <strong>p-valor = 0.0463</strong> es apenas inferior al umbral α = 0.05, por lo que la prueba
+    mal planteada <strong>rechaza la hipótesis nula</strong> y concluye que las medias de brillo
+    son distintas. Sin embargo, esta conclusión es engañosa por varias razones:
+  </p>
+  <ul>
+    <li>el intervalo de confianza es <strong>muy amplio</strong>, lo que refleja gran incertidumbre
+        en la estimación de la diferencia;</li>
+    <li>el límite inferior del IC (0.0405) está muy cerca de 0, lo que indica que la fuerza de la
+        evidencia es débil;</li>
+    <li>la prueba contradice análisis previos con muestras grandes, en los que las medias eran
+        prácticamente iguales.</li>
+  </ul>
+  <p>
+    En este contexto, el rechazo de H₀ es un ejemplo típico de <strong>Error Tipo I</strong>:
+    se concluye que existe una diferencia real en las medias cuando, a la luz del conjunto completo
+    de información, lo más razonable es suponer que no la hay.
+  </p>
+
+  <h3>6. Lecciones metodológicas</h3>
+  <p>
+    Esta prueba ilustra varios mensajes importantes:
+  </p>
+  <ul>
+    <li>Un <strong>p-valor menor a 0.05 no garantiza una conclusión fiable</strong>; debe interpretarse
+        junto con el tamaño muestral, el ancho del intervalo de confianza y la evidencia previa.</li>
+    <li>Las <strong>muestras pequeñas</strong> son muy inestables y pueden generar resultados extremos
+        por simple azar.</li>
+    <li>Es fundamental <strong>elegir correctamente el modelo de prueba</strong> (por ejemplo, no asumir
+        varianzas iguales sin justificación) y ser consistente con los hallazgos globales del estudio.</li>
+  </ul>
+
+  <h3>7. Conclusión</h3>
+  <p>
+    La Prueba 6 no debe interpretarse como evidencia real de que las medias de brillo difieran entre
+    la Zona A y la Zona B, sino como un <strong>ejemplo educativo de cómo una prueba mal diseñada,
+    con n muy pequeño y supuestos incorrectos, puede producir un falso positivo</strong>. Este caso
+    muestra la importancia de combinar el análisis estadístico con un diseño cuidadoso, tamaños
+    muestrales adecuados y la consideración explícita de la información previa disponible.
+  </p>
+
+
+
+      </details>
+
+      <details>
+        <summary><strong>Prueba 7 — Error Tipo II, potencia y tamaño de muestra</strong></summary>
+       
+        <h2>Prueba 7 — Error Tipo II, potencia y tamaño de muestra</h2>
+
+  <h3>1. Contexto y objetivo</h3>
+  <p>
+    Esta prueba tiene un propósito explícitamente <strong>pedagógico</strong>: ilustrar cómo una prueba bien
+    planteada desde el punto de vista técnico (t de Welch correcta) puede aun así tener
+    <strong>baja potencia</strong> y conducir a un <strong>Error Tipo II</strong> (falso negativo) cuando
+    el tamaño de muestra es insuficiente y el nivel de significancia es muy estricto.
+  </p>
+  <p>
+    Se trabaja con la variable de color <code>bp_rp</code>, comparando la Zona A (plano galáctico) y la Zona B
+    (polos galácticos). Estudios previos en este mismo proyecto han mostrado que existe una diferencia real
+    en el color medio entre zonas, por lo que, en este contexto, considerar que μ<sub>A</sub> = μ<sub>B</sub>
+    es una hipótesis nula <em>falsa</em>. Justamente por esto, no detectarla nos permite ilustrar el
+    Error Tipo II.
+  </p>
+
+  <h3>2. Diseño inicial: prueba con baja potencia</h3>
+  <p>
+    Para la primera parte del ejemplo se plantea una prueba t de Welch bilateral con:
+  </p>
+  <ul>
+    <li><strong>n = 10</strong> estrellas por zona (muestra pequeña);</li>
+    <li><strong>α = 0.01</strong> (nivel de significancia muy estricto);</li>
+    <li>comparación de medias de <code>bp_rp</code> entre Zona A y Zona B.</li>
+  </ul>
+
+  <p>Los descriptivos de esta submuestra fueron:</p>
+  <table>
+    <tr><th>Zona</th><th>n</th><th>Media de color</th><th>Desviación estándar</th></tr>
+    <tr><td>A</td><td>10</td><td>1.75</td><td>0.569</td></tr>
+    <tr><td>B</td><td>10</td><td>1.18</td><td>0.773</td></tr>
+  </table>
+
+  <!-- FIGURA 1 – Submuestra pequeña y resultado de la prueba de Welch -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image133.png"
+         alt="Resultados numéricos de la prueba t de Welch con n=10 por zona y alfa=0.01">
+    <figcaption>
+      <strong>Figura 1.</strong> Salida resumida de la prueba t de Welch para el color BP–RP con n = 10 por zona
+      y α = 0.01. A pesar de que la diferencia muestral es apreciable, la prueba no logra rechazar H₀.
+    </figcaption>
+  </figure>
+
+  <h3>3. Resultados con n = 10 y α = 0.01</h3>
+  <p>
+    La prueba t de Welch bilateral arrojó los siguientes resultados:
+  </p>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Tamaño muestral por zona</td><td>10</td></tr>
+    <tr><td>α (nivel de significancia)</td><td>0.01</td></tr>
+    <tr><td>Diferencia de medias (A − B)</td><td>0.566</td></tr>
+    <tr><td>Estadístico t</td><td>1.87</td></tr>
+    <tr><td>Grados de libertad (Welch)</td><td>≈ 16.5</td></tr>
+    <tr><td>p-valor</td><td>0.0799</td></tr>
+    <tr><td>IC (1 − α) = 99 % para (μ<sub>A</sub> − μ<sub>B</sub>)</td><td>[−0.316 ; 1.45]</td></tr>
+    <tr><td>Decisión</td><td><strong>NO rechaza H₀</strong></td></tr>
+  </table>
+
+  <p>
+    Aun cuando la diferencia de medias observada (≈ 0.57 magnitudes en color) es considerable desde el punto de vista
+    físico, el p-valor es superior a 0.01 y el intervalo de confianza al 99 % incluye el 0. En consecuencia,
+    la prueba concluye que <strong>no hay evidencia suficiente para afirmar que las medias difieren</strong>.
+  </p>
+  <p>
+    En este escenario, sabemos por análisis previos que la hipótesis nula es falsa; sin embargo, el diseño de la prueba
+    (muestra pequeña y α muy bajo) produce un <strong>Error Tipo II</strong>: no se detecta una diferencia que en realidad
+    existe. La probabilidad de cometer este tipo de error se conoce como <strong>β</strong>, y su complemento
+    (1 − β) es la <strong>potencia</strong> de la prueba, es decir, la probabilidad de rechazar H₀ cuando realmente
+    es falsa.
+  </p>
+
+  <h3>4. Aumentar la potencia: tamaño muestral y control del Error Tipo II</h3>
+  <p>
+    En este contexto, el <strong>Error Tipo II</strong> consiste en <em>no detectar</em> la diferencia real
+    de color entre Zonas A y B. La probabilidad de cometer este error se denota por β y su complemento
+    (1 − β) es la <strong>potencia</strong> de la prueba: la probabilidad de rechazar H₀ cuando ésta es
+    falsa. Dado que el nivel de significancia α y la diferencia real de interés están fijados por el
+    problema, el principal elemento que tenemos bajo nuestro control para aumentar la potencia es el
+    <strong>tamaño muestral n</strong> por grupo.
+  </p>
+
+  <h4>4.1 Supuestos para el cálculo</h4>
+  <p>
+    A partir de los datos de este estudio, se adoptaron los siguientes valores aproximados:
+  </p>
+  <ul>
+    <li>Diferencia poblacional a detectar entre zonas:
+      <strong>Δ ≈ 0.52</strong> magnitudes en BP–RP (media A − media B).</li>
+    <li>Desviación estándar por grupo (similar en ambas zonas):
+      <strong>σ ≈ 0.65</strong>.</li>
+    <li>Prueba bilateral sobre la diferencia de medias (t de Welch).</li>
+    <li>Muestras balanceadas: <strong>n<sub>A</sub> = n<sub>B</sub> = n</strong>.</li>
+  </ul>
+
+  <h4>4.2 Fórmula aproximada para n</h4>
+  <p>
+    Utilizando la aproximación normal clásica para el contraste de dos medias independientes con varianzas
+    similares, el tamaño muestral necesario por grupo puede estimarse como:
+  </p>
+  <p style="margin-left:1.5rem;">
+    <code>
+      n ≈ 2 · ((z<sub>1−α/2</sub> + z<sub>1−β</sub>) · σ / Δ)<sup>2</sup>
+    </code>
+  </p>
+  <p>
+    donde:
+  </p>
+  <ul>
+    <li><strong>α</strong> es el nivel de significancia bilateral,</li>
+    <li><strong>β</strong> es la probabilidad de Error Tipo II,</li>
+    <li><strong>1 − β</strong> es la potencia deseada,</li>
+    <li><strong>z<sub>1−α/2</sub></strong> es el cuantil de la normal estándar asociado a α,</li>
+    <li><strong>z<sub>1−β</sub></strong> es el cuantil asociado a la potencia (por ejemplo, z<sub>0.8</sub> ≈ 0.84).</li>
+  </ul>
+  <p>
+    En nuestro caso, la razón Δ/σ ≈ 0.52 / 0.65 ≈ <strong>0.80</strong>, que se utiliza en la expresión anterior.
+  </p>
+
+  <h4>4.3 Tamaños muestrales según α (potencia ≈ 80%)</h4>
+  <p>
+    Aplicando la fórmula con una potencia objetivo <strong>1 − β = 0.80</strong> (β ≈ 0.20), se obtienen los
+    siguientes tamaños muestrales aproximados por zona:
+  </p>
+  <ul>
+    <li><strong>α = 0.05</strong> (bilateral):
+      z<sub>1−α/2</sub> = 1.96, z<sub>0.8</sub> = 0.84 → <strong>n ≈ 25</strong> por zona.</li>
+    <li><strong>α = 0.01</strong> (bilateral):
+      z<sub>1−α/2</sub> = 2.576 → <strong>n ≈ 37</strong> por zona.</li>
+    <li><strong>α = 0.001</strong> (bilateral):
+      z<sub>1−α/2</sub> = 3.291 → <strong>n ≈ 54</strong> por zona.</li>
+  </ul>
+  <p>
+    Es decir, cuanto más estricto es el nivel de significancia (α más pequeño), más grande debe ser el tamaño
+    muestral para mantener una potencia razonable frente a la misma diferencia Δ.
+  </p>
+
+  <h4>4.4 Aplicación al estudio: elección de n ≈ 40</h4>
+  <p>
+    En este informe se decidió trabajar con <strong>α = 0.01</strong>. De acuerdo con los cálculos anteriores,
+    se requiere aproximadamente <strong>n ≈ 37</strong> observaciones por zona para lograr una potencia cercana
+    al 80&nbsp;% al detectar una diferencia de Δ ≈ 0.52. En la verificación empírica se tomó
+    <strong>n = 40 por zona</strong>, ligeramente por encima del valor teórico, lo que proporciona una potencia
+    incluso algo mayor que 0.80.
+  </p>
+  <p>
+    Al comparar los resultados:
+  </p>
+  <ul>
+    <li>Con <strong>n = 10</strong> por zona y α = 0.01, la prueba correcta de Welch no rechaza H₀
+        (ejemplo de <strong>Error Tipo II</strong> por baja potencia).</li>
+    <li>Con <strong>n = 40</strong> por zona y el mismo α, la prueba sí rechaza H₀ con un p-valor muy pequeño
+        y un intervalo de confianza al 99 % que ya no incluye 0, reflejando una potencia adecuada.</li>
+  </ul>
+  <p>
+    En síntesis, <strong>la forma principal de evitar el Error Tipo II en este contexto es aumentar el tamaño
+    muestral hasta alcanzar la potencia deseada</strong>, calculando n de forma explícita a partir de la
+    diferencia mínima relevante, la variabilidad observada (σ) y el nivel de significancia elegido.
+  </p>
+
+  <h3>5. Aumentar la potencia: cálculo del tamaño de muestra</h3>
+  <p>
+    Para reducir la probabilidad de Error Tipo II se buscó un tamaño de muestra que garantizara aproximadamente:
+  </p>
+  <ul>
+    <li><strong>α = 0.01</strong> (mantener un criterio estricto);</li>
+    <li><strong>potencia ≈ 0.80</strong> (es decir, β ≈ 0.20);</li>
+    <li>diferencia mínima relevante a detectar de <strong>Δ = 0.52</strong> magnitudes en BP–RP;</li>
+    <li>desviación estándar aproximada por grupo de <strong>σ = 0.65</strong>.</li>
+  </ul>
+  <p>
+    Usando la fórmula clásica de tamaño de muestra para comparación de dos medias independientes con varianzas
+    similares y nivel de significancia bilateral, se obtuvo un valor cercano a
+    <strong>n ≈ 40 observaciones por zona</strong> para alcanzar la potencia deseada.
+  </p>
+
+  <!-- FIGURA 2 – Esquema de potencia o tamaño de muestra -->
+  <figure style="margin-top: 1.5rem;">
+    <img src="./gaia_assets/image134.png"
+         alt="Esquema conceptual de la potencia estadística y del cálculo de tamaño de muestra">
+    <figcaption>
+      <strong>Figura 2.</strong> Representación esquemática del concepto de potencia (1 − β) y de cómo el aumento
+      del tamaño muestral permite detectar con mayor probabilidad una diferencia real entre las medias.
+    </figcaption>
+  </figure>
+
+  <h3>6. Verificación empírica con n = 40 por zona</h3>
+  <p>
+    Para comprobar en la práctica el efecto del aumento de n, se repitió la comparación de medias de BP–RP tomando
+    <strong>40 estrellas por zona</strong> y manteniendo la prueba t de Welch bilateral con α = 0.01
+    (intervalo de confianza del 99 %).
+  </p>
+  <p>El resumen de resultados fue:</p>
+  <table>
+    <tr><th>Parámetro</th><th>Valor</th></tr>
+    <tr><td>Tamaño muestral por zona</td><td>40</td></tr>
+    <tr><td>Diferencia de medias (A − B)</td><td>0.567</td></tr>
+    <tr><td>Estadístico t</td><td>3.50</td></tr>
+    <tr><td>Grados de libertad (Welch)</td><td>≈ 77</td></tr>
+    <tr><td>p-valor</td><td>0.000774</td></tr>
+    <tr><td>IC99 % para (μ<sub>A</sub> − μ<sub>B</sub>)</td><td>[0.139 ; 0.995]</td></tr>
+    <tr><td>Decisión</td><td><strong>Rechaza H₀ (α = 0.01)</strong></td></tr>
+  </table>
+
+
+  <h3>7. Interpretación y conclusiones pedagógicas</h3>
+  <p>
+    La comparación entre los escenarios n = 10 y n = 40 muestra con claridad el efecto de la potencia:
+  </p>
+  <ul>
+    <li>Con <strong>n = 10</strong> por zona y α = 0.01, la prueba es correcta en su formulación,
+        pero tiene <strong>baja potencia</strong>; el p-valor ≈ 0.08 y el IC99% incluye el 0,
+        por lo que no se rechaza H₀ a pesar de que la diferencia de color es real
+        (ejemplo de <strong>Error Tipo II</strong>).</li>
+    <li>Al incrementar a <strong>n = 40</strong> por zona, manteniendo el mismo α,
+        la prueba gana potencia: el p-valor cae a 0.000774 y el IC99% queda completamente
+        por encima de 0, permitiendo detectar de forma robusta la diferencia de color.</li>
+  </ul>
+  <p>
+    Este ejercicio resalta que:
+  </p>
+  <ul>
+    <li>la significancia estadística depende no solo del tamaño del efecto, sino también del
+        <strong>tamaño de muestra</strong> y del nivel de significancia elegido;</li>
+    <li>un α muy pequeño y una n reducida incrementan la probabilidad de <strong>Error Tipo II</strong>;</li>
+    <li>el diseño de experimentos debe contemplar explícitamente la <strong>potencia deseada</strong> y
+        calcular el tamaño de muestra necesario para alcanzarla.</li>
+  </ul>
+  <p>
+    En resumen, la Prueba 8 ilustra cómo, incluso con un modelo de prueba adecuado, una decisión basada en
+    una muestra pequeña y un umbral de significancia muy exigente puede ocultar una diferencia real entre
+    zonas. Aumentar el tamaño muestral permite reducir β, incrementar la potencia y recuperar la señal
+    estadística que refleja la diferencia física subyacente.
+  </p>
+
+      </details>
+
+      <details>
+        <summary><strong>Resumen final</strong></summary>
+        
+        <h2>Resumen general de las pruebas de hipótesis</h2>
+  <p>
+    A continuación se presenta un resumen conceptual y de resultados de las siete pruebas de hipótesis
+    realizadas en el proyecto, indicando para cada una la pregunta estadística planteada y si se
+    rechazó o no la hipótesis nula (H₀).
+  </p>
+
+  <h3>Prueba 1 — Brillo g (phot_g_mean_mag): igualdad de medias (t de Welch)</h3>
+  <p>
+    Se compararon las medias del brillo g entre la Zona A y la Zona B mediante una prueba
+    <strong>t de Welch</strong>, permitiendo varianzas diferentes. El objetivo era comprobar si el brillo medio
+    de las estrellas difería entre el plano galáctico y los polos.
+  </p>
+  <p>
+    El <strong>p-valor resultó mayor que 0.05</strong>, por lo que <strong>no se rechazó H₀</strong>. Estadísticamente,
+    las medias de brillo g se consideran similares en ambas zonas, lo que sugiere que, al menos en esta selección,
+    el brillo medio no es el principal rasgo diferenciador entre plano y polos.
+  </p>
+
+  <h3>Prueba 2 — Brillo g: igualdad de varianzas (F de Fisher)</h3>
+  <p>
+    Se aplicó una prueba <strong>F de Fisher</strong> para contrastar si la <strong>dispersión</strong> del brillo g
+    era la misma en la Zona A y en la Zona B. La razón de varianzas Var(A)/Var(B) se situó cerca de 1, con un
+    intervalo de confianza que incluía el valor 1.
+  </p>
+  <p>
+    El <strong>p-valor ligeramente superior a 0.05</strong> llevó a <strong>no rechazar H₀</strong>.
+    Aunque la estimación puntual sugiere una ligera diferencia, la evidencia estadística es débil; por tanto,
+    se concluye que las varianzas de brillo g son compatibles con ser iguales en las dos zonas.
+  </p>
+
+  <h3>Prueba 3 — Color (BP–RP): igualdad de medias (t de Welch)</h3>
+  <p>
+    Aquí se compararon las medias del <strong>índice de color BP–RP</strong> entre la Zona A y la Zona B
+    mediante una t de Welch. El color está ligado a la temperatura estelar y al enrojecimiento por polvo
+    interestelar, por lo que es una variable clave para distinguir regiones galácticas.
+  </p>
+  <p>
+    El <strong>p-valor fue menor que 0.05</strong> y el intervalo de confianza no incluyó 0, de modo que
+    <strong>se rechazó H₀</strong>. Las estrellas de la Zona A presentan un color medio
+    significativamente más rojo que las de la Zona B, en coherencia con la mayor extinción en el plano galáctico.
+  </p>
+
+  <h3>Prueba 4 — Color (BP–RP): igualdad de varianzas (F de Fisher)</h3>
+  <p>
+    Se analizó si la <strong>dispersión del color</strong> BP–RP era similar en ambas zonas mediante una prueba
+    F de Fisher. La razón Var(A)/Var(B) resultó cercana a 1 y el intervalo de confianza incluyó este valor.
+  </p>
+  <p>
+    El <strong>p-valor alto (≈ 0.63)</strong> implicó <strong>no rechazar H₀</strong>. Las varianzas de color
+    se consideran estadísticamente iguales, lo que indica que ambas regiones presentan una amplitud comparable
+    de tipos y colores estelares; la diferencia principal entre zonas está en el <em>desplazamiento</em> del color
+    medio, no en la anchura de la distribución.
+  </p>
+
+  <h3>Prueba 5 — parallax_over_error: igualdad de medias (t de Welch)</h3>
+  <p>
+    En esta prueba se comparó la media de <strong>parallax_over_error</strong> (relación señal/ruido de la paralaje)
+    entre la Zona A y la Zona B. Valores más altos indican mediciones de distancia más precisas.
+  </p>
+  <p>
+    El resultado fue un <strong>p-valor extremadamente pequeño</strong> y un intervalo de confianza completamente
+    por debajo de 0 para la diferencia (μ<sub>A</sub> − μ<sub>B</sub>), por lo que
+    <strong>se rechazó H₀ de igualdad de medias</strong>. Las mediciones de paralaje en la Zona A son, en promedio,
+    significativamente menos precisas que en la Zona B, en línea con las condiciones más complejas del plano galáctico.
+  </p>
+
+  <h3>Prueba 6 — Brillo g: ejemplo de prueba mal planteada (Error Tipo I)</h3>
+  <p>
+    Esta prueba tuvo un objetivo educativo: se aplicó una <strong>t de Student asumiendo varianzas iguales</strong>
+    con un tamaño muestral extremadamente pequeño (<strong>n = 5 por zona</strong>), ignorando la evidencia previa
+    disponible. El diseño combina un supuesto dudoso (varianzas iguales) con una muestra muy inestable.
+  </p>
+  <p>
+    El <strong>p-valor resultó justo por debajo de 0.05</strong> y la prueba concluyó que las medias de brillo
+    eran distintas, por lo que <strong>H₀ se rechaza formalmente</strong>. Sin embargo, dado el contexto,
+    este resultado se interpreta como un <strong>posible Error Tipo I</strong> (falso positivo) y sirve para mostrar
+    que un p &lt; 0.05 no garantiza una conclusión fiable cuando el diseño de la prueba es deficiente.
+  </p>
+
+  <h3>Prueba 7 — Color (BP–RP): baja potencia y Error Tipo II</h3>
+  <p>
+    La última prueba ilustra el concepto de <strong>potencia</strong> y de <strong>Error Tipo II</strong>.
+    Se sabe por análisis previos que existe una diferencia real en el color medio entre zonas, pero se plantea
+    una t de Welch bilateral con:
+  </p>
+  <ul>
+    <li><strong>n = 10</strong> por zona (muestra pequeña),</li>
+    <li><strong>α = 0.01</strong> (nivel de significancia muy estricto).</li>
+  </ul>
+  <p>
+    En estas condiciones, el <strong>p-valor ≈ 0.08</strong> y el intervalo de confianza al 99 % incluye 0, por lo que
+    <strong>no se rechaza H₀</strong> a pesar de que la diferencia en realidad existe. Este es un ejemplo de
+    <strong>Error Tipo II</strong> debido a baja potencia.
+  </p>
+  <p>
+    Posteriormente se calculó un tamaño muestral teórico para lograr potencia ≈ 0.80 y se repitió la prueba con
+    <strong>n = 40 por zona</strong> y α = 0.01. En este caso el p-valor se volvió muy pequeño y el intervalo al 99 %
+    quedó completamente por encima de 0, de modo que <strong>se rechazó H₀</strong>. La comparación de ambos escenarios
+    muestra cómo <strong>aumentar n es la herramienta clave para reducir β y evitar errores de tipo II</strong>.
+  </p>
+      
+      </details>
+    </section>
+
+
+    <section class="panel" id="panel_R" role="tabpanel" aria-labelledby="tab_R" aria-hidden="true">
+      El código completo usado para el proyecto se puede encontrar en Github en el siguiente link:
+      <li><a href="https://www.cosmos.esa.int/web/gaia/dr3" target="_blank" rel="noopener">Código R - Proyecto Final de Inferencia Estadística</a>.</li>
+    </section>
+
+    
+
+    <section class="panel" id="panel_refs" role="tabpanel" aria-labelledby="tab_refs" aria-hidden="true">
+      <h2>Referencias</h2>
+      <ol>
+        <li><a href="https://www.cosmos.esa.int/web/gaia/dr3" target="_blank" rel="noopener">Gaia DR3 — página oficial (ESA)</a>.</li>
+        <li><a href="https://www.cosmos.esa.int/web/gaia/dr3-passbands" target="_blank" rel="noopener">Sistema fotométrico G, BP, RP (DR3)</a>.</li>
+        <li><a href="https://astroquery.readthedocs.io/en/latest/gaia/gaia.html" target="_blank" rel="noopener">astroquery.gaia (TAP+)</a> y <a href="https://www.cosmos.esa.int/web/gaia-users/archive/programmatic-access" target="_blank" rel="noopener">acceso programático</a>.</li>
+        <li><a href="https://www.cosmos.esa.int/web/gaia-users/archive/writing-queries" target="_blank" rel="noopener">Cómo escribir consultas ADQL (incluye <code>random_index</code>)</a>.</li>
+        <li><a href="https://www.aanda.org/articles/aa/full_html/2023/06/aa43940-22/aa43940-22.html" target="_blank" rel="noopener">Vallenari et al. 2023 — DR3 Overview (A&A)</a>.</li>
+        <li><a href="https://irsa.ipac.caltech.edu/data/Gaia/dr3/gaia_dr3_source_colDescriptions.html" target="_blank" rel="noopener">Definición de columnas (Gaia DR3)</a>.</li>
+        <li><a href="https://gaia.aip.de/metadata/gaiadr3/gaia_source/" target="_blank" rel="noopener">Data model gaiadr3.gaia_source</a>.</li>
+        <li><a href="https://dc.zah.uni-heidelberg.de/tableinfo/gaia.edr3lite" target="_blank" rel="noopener">Vista DR3lite/EDR3lite</a>.</li>
+        <li><a href="https://docs.g-vo.org/adql/notes.pdf" target="_blank" rel="noopener">ADQL short course (2024)</a>.</li>
+      </ol>
+    </section>
+
+    <p class="footer">© 2025 — Informe académico. Hecho por Juan Diego Barrero</p>
+  </div>
+
+  <script>
+    // Tabs logic with ARIA
+    const tabs = document.querySelectorAll('[role="tab"]');
+    const panels = document.querySelectorAll('[role="tabpanel"]');
+
+    function activate(id){
+      tabs.forEach(t => t.setAttribute('aria-selected', String(t.id===id)));
+      panels.forEach(p => p.setAttribute('aria-hidden', String(p.id!==document.getElementById(id).getAttribute('aria-controls'))));
+      // ensure correct mapping
+      const target = document.getElementById(document.getElementById(id).getAttribute('aria-controls'));
+      panels.forEach(p => p.setAttribute('aria-hidden','true'));
+      target.setAttribute('aria-hidden','false');
+    }
+
+    tabs.forEach(t => t.addEventListener('click', () => activate(t.id)));
+
+    // keyboard navigation
+    document.addEventListener('keydown', (e)=>{
+      if(e.target.getAttribute('role')!== 'tab') return;
+      const idx = Array.from(tabs).indexOf(e.target);
+      if(e.key==='ArrowRight') tabs[(idx+1)%tabs.length].focus();
+      if(e.key==='ArrowLeft') tabs[(idx-1+tabs.length)%tabs.length].focus();
+    });
+  </script>
+  <script>
+    // Tabs logic with ARIA
+    const tabs = document.querySelectorAll('[role="tab"]');
+    const panels = document.querySelectorAll('[role="tabpanel"]');
+
+    function activate(id){
+      tabs.forEach(t => t.setAttribute('aria-selected', String(t.id===id)));
+      panels.forEach(p => p.setAttribute('aria-hidden','true'));
+      const btn = document.getElementById(id);
+      const target = document.getElementById(btn.getAttribute('aria-controls'));
+      if(target) target.setAttribute('aria-hidden','false');
+    }
+
+    tabs.forEach(t => t.addEventListener('click', () => {
+      if(t.id === 'tab_showall'){
+        panels.forEach(p => p.setAttribute('aria-hidden','false'));
+        tabs.forEach(tb => tb.setAttribute('aria-selected','false'));
+        return;
+      }
+      activate(t.id)
+    }));
+
+    // keyboard navigation
+    document.addEventListener('keydown', (e)=>{
+      if(e.target.getAttribute('role')!== 'tab') return;
+      const idx = Array.from(tabs).indexOf(e.target);
+      if(e.key==='ArrowRight') tabs[(idx+1)%tabs.length].focus();
+      if(e.key==='ArrowLeft') tabs[(idx-1+tabs.length)%tabs.length].focus();
+    });
+  </script>
+</body>
+</html>
